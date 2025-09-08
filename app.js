@@ -10,6 +10,8 @@ const statusMessage = document.getElementById('statusMessage');
 const uploadPassword = document.getElementById('uploadPassword');
 
 let files = [];
+// 存储上次尝试的密码
+let lastAttemptedPassword = null;
 
 // 拖放事件处理
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -183,7 +185,7 @@ uploadBtn.addEventListener('click', async () => {
             await uploadSingleFile(files[0], password);
             showMessage(`成功上传 1 个文件，已更新文档`, 'success');
         } else {
-            // 多个文件上传，使用原有方式
+            // 多个文件上传逻辑
             const successFiles = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -194,8 +196,12 @@ uploadBtn.addEventListener('click', async () => {
                         path: filePath
                     });
                 } catch (error) {
-                    showMessage(`文件 "${file.name}" 上传失败: ${error.message}`, 'error');
-                    console.error(`文件 "${file.name}" 上传失败:`, error);
+                    // 处理多个文件上传时的密码错误
+                    handleUploadError(error, file.name, i);
+                    // 如果是密码错误，停止后续文件上传
+                    if (error.message.includes('密码错误，拒绝上传')) {
+                        break;
+                    }
                 }
             }
             
@@ -210,7 +216,8 @@ uploadBtn.addEventListener('click', async () => {
         renderFileList();
     } catch (error) {
         console.error('上传过程出错:', error);
-        showMessage(`上传失败: ${error.message}`, 'error');
+        // 处理错误信息显示
+        handleUploadError(error);
     } finally {
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = '<i class="fa fa-upload mr-2"></i>上传所有文件';
@@ -242,22 +249,34 @@ async function uploadSingleFile(file, password) {
                     })
                 });
                 
-                updateProgress(0, 60);
-                
+                // 获取结果
                 const result = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(result.error || `上传失败: ${response.status}`);
+                    // 重置进度条
+                    updateProgress(0, 0);
+                    
+                    // 存储当前尝试的密码用于下次比较
+                    const currentPassword = password;
+                    
+                    // 抛出包含错误信息的异常，增加密码内容用于检测
+                    const error = new Error(result.error || `上传失败: ${response.status}`);
+                    error.password = currentPassword;
+                    throw error;
                 }
                 
                 updateProgress(0, 100);
+                // 成功后重置上次尝试密码
+                lastAttemptedPassword = null;
                 resolve();
             } catch (error) {
+                updateProgress(0, 0);
                 reject(error);
             }
         };
         
         reader.onerror = (error) => {
+            updateProgress(0, 0);
             reject(new Error(`文件读取错误: ${error.message}`));
         };
         
@@ -293,17 +312,30 @@ async function uploadFileViaCloudFunction(file, password, fileIndex) {
                 const result = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(result.error || `上传失败: ${response.status}`);
+                    // 重置进度条
+                    updateProgress(fileIndex, 0);
+                    
+                    // 存储当前尝试的密码用于下次比较
+                    const currentPassword = password;
+                    
+                    // 抛出包含错误信息的异常
+                    const error = new Error(result.error || `上传失败: ${response.status}`);
+                    error.password = currentPassword;
+                    throw error;
                 }
                 
                 updateProgress(fileIndex, 100);
+                // 成功后重置上次尝试密码
+                lastAttemptedPassword = null;
                 resolve(result.data.path); // 返回完整文件路径
             } catch (error) {
+                updateProgress(fileIndex, 0);
                 reject(error);
             }
         };
         
         reader.onerror = (error) => {
+            updateProgress(fileIndex, 0);
             reject(new Error(`文件读取错误: ${error.message}`));
         };
         
@@ -330,7 +362,10 @@ async function triggerWorkflowViaCloudFunction(successFiles, password) {
     const result = await response.json();
     
     if (!response.ok) {
-        throw new Error(result.error || `工作流触发失败: ${response.status}`);
+        // 抛出包含错误信息的异常
+        const error = new Error(result.error || `工作流触发失败: ${response.status}`);
+        error.password = password;
+        throw error;
     }
     
     return result;
@@ -341,5 +376,45 @@ function updateProgress(fileIndex, percentage) {
     const progressBar = document.querySelector(`.progress-bar[data-index="${fileIndex}"]`);
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
+    }
+}
+
+// 专门的错误处理函数
+function handleUploadError(error, fileName = null, fileIndex = 0) {
+    // 检查是否是密码错误
+    if (error.message.includes('密码错误，拒绝上传')) {
+        const currentPassword = error.password || uploadPassword.value;
+        
+        // 检查密码是否有变化
+        if (lastAttemptedPassword === currentPassword) {
+            // 密码未变化，提示用户修改密码
+            showMessage('密码错误，请修改密码后重试', 'error');
+        } else {
+            // 密码有变化，仅提示错误
+            const msg = fileName ? 
+                `文件 "${fileName}" 上传失败: ${error.message}` : 
+                error.message;
+            showMessage(msg, 'error');
+        }
+        
+        // 更新上次尝试的密码
+        lastAttemptedPassword = currentPassword;
+        
+        // 重置进度条
+        if (fileName) {
+            updateProgress(fileIndex, 0);
+        } else {
+            files.forEach((_, index) => updateProgress(index, 0));
+        }
+    } else {
+        // 其他错误
+        const msg = fileName ? 
+            `文件 "${fileName}" 上传失败: ${error.message}` : 
+            error.message;
+        showMessage(msg, 'error');
+        
+        if (fileName) {
+            updateProgress(fileIndex, 0);
+        }
     }
 }
