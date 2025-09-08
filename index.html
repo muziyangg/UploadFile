@@ -49,35 +49,17 @@
     <div class="container mx-auto px-4 py-8 max-w-3xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-800">文件上传器</h1>
-            <p class="text-gray-600 mt-2">直接上传文件到GitHub仓库</p>
+            <p class="text-gray-600 mt-2">上传文件到GitHub仓库</p>
         </header>
 
-        <!-- 仓库和认证设置 -->
+        <!-- 认证设置 -->
         <div class="bg-white p-4 rounded-lg shadow mb-6">
-            <h2 class="text-lg font-semibold mb-3">GitHub 配置</h2>
+            <h2 class="text-lg font-semibold mb-3">上传设置</h2>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">GitHub 用户名</label>
-                <input type="text" id="githubUsername" 
+                <label class="block text-sm font-medium text-gray-700 mb-1">上传密码</label>
+                <input type="password" id="uploadPassword" 
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="输入GitHub用户名" value="your-username" />
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">GitHub 仓库名</label>
-                <input type="text" id="githubRepo" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="输入GitHub仓库名" value="your-repo" />
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">分支名</label>
-                <input type="text" id="githubBranch" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="输入分支名" value="main" />
-            </div>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">文件存储路径</label>
-                <input type="text" id="filePath" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="例如：src/upload/assets/" value="src/upload/assets/" />
+                       placeholder="输入上传密码" />
             </div>
         </div>
 

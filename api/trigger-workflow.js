@@ -3,26 +3,33 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { username, repo, batchFiles, batchTimestamp } = req.body;
+    const { password, batchFiles, batchTimestamp } = req.body;
     
     // 验证必要参数
-    if (!username || !repo || !batchFiles || !batchTimestamp) {
+    if (!password || !batchFiles || !batchTimestamp) {
         return res.status(400).json({ error: '缺少必要参数' });
     }
     
-    // 验证环境变量中的GitHub令牌
-    if (!process.env.GITHUB_TOKEN) {
-        return res.status(500).json({ error: '服务器未配置GitHub令牌' });
+    // 验证环境变量配置
+    if (!process.env.GITHUB_TOKEN || !process.env.UPLOAD_PASSWORD || 
+        !process.env.GITHUB_USERNAME || !process.env.GITHUB_REPO) {
+        return res.status(500).json({ error: '服务器配置不完整' });
+    }
+    
+    // 验证上传密码
+    if (password !== process.env.UPLOAD_PASSWORD) {
+        return res.status(403).json({ error: '密码错误，拒绝操作' });
     }
     
     try {
         // 触发GitHub工作流
-        const url = `https://api.github.com/repos/${username}/${repo}/dispatches`;
+        const { GITHUB_USERNAME, GITHUB_REPO, GITHUB_TOKEN } = process.env;
+        const url = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/dispatches`;
         
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                'Authorization': `token ${GITHUB_TOKEN}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json',
                 'User-Agent': 'Vercel Cloud Function'

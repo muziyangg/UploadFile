@@ -3,10 +3,10 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { password, content, fileName } = req.body;
+    const { password, content, batchTimestamp, fileName } = req.body;
     
     // 验证必要参数
-    if (!password || !content || !fileName) {
+    if (!password || !content || !batchTimestamp || !fileName) {
         return res.status(400).json({ error: '缺少必要参数' });
     }
     
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     }
     
     try {
-        // 上传文件到GitHub
+        // 1. 上传文件到GitHub
         let sha = null;
         const { GITHUB_USERNAME, GITHUB_REPO, GITHUB_BRANCH, GITHUB_TOKEN, FILE_STORAGE_PATH } = process.env;
         
@@ -80,18 +80,38 @@ export default async function handler(req, res) {
             throw new Error(`文件上传失败: ${errorData.message || uploadResponse.statusText}`);
         }
         
-        const result = await uploadResponse.json();
-        // 返回完整文件路径
+        // 2. 触发GitHub工作流
+        const workflowUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/dispatches`;
+        
+        const workflowResponse = await fetch(workflowUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Vercel Cloud Function'
+            },
+            body: JSON.stringify({
+                event_type: 'file_uploaded',
+                client_payload: {
+                    batch_files: [{ name: fileName, path: fullFilePath }],
+                    batch_timestamp: batchTimestamp
+                }
+            })
+        });
+        
+        if (!workflowResponse.ok) {
+            const errorData = await workflowResponse.json();
+            throw new Error(`工作流触发失败: ${errorData.message || workflowResponse.statusText}`);
+        }
+        
         return res.status(200).json({ 
             success: true, 
-            data: {
-                ...result,
-                path: fullFilePath
-            } 
+            message: '文件上传成功并触发工作流' 
         });
         
     } catch (error) {
-        console.error('上传过程出错:', error);
+        console.error('处理过程出错:', error);
         return res.status(500).json({ error: error.message });
     }
 }

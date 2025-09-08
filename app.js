@@ -7,44 +7,9 @@ const fileCount = document.getElementById('fileCount');
 const emptyMessage = document.getElementById('emptyMessage');
 const uploadBtn = document.getElementById('uploadBtn');
 const statusMessage = document.getElementById('statusMessage');
-const githubUsername = document.getElementById('githubUsername');
-const githubRepo = document.getElementById('githubRepo');
-const githubBranch = document.getElementById('githubBranch');
-const filePath = document.getElementById('filePath');
+const uploadPassword = document.getElementById('uploadPassword');
 
 let files = [];
-
-// 加载保存的配置
-function loadSettings() {
-    const savedUsername = localStorage.getItem('githubUsername');
-    if (savedUsername) {
-        githubUsername.value = savedUsername;
-    }
-    
-    const savedRepo = localStorage.getItem('githubRepo');
-    if (savedRepo) {
-        githubRepo.value = savedRepo;
-    }
-    
-    const savedBranch = localStorage.getItem('githubBranch');
-    if (savedBranch) {
-        githubBranch.value = savedBranch;
-    }
-    
-    const savedFilePath = localStorage.getItem('filePath');
-    if (savedFilePath) {
-        filePath.value = savedFilePath;
-    }
-}
-
-function saveSettings() {
-    localStorage.setItem('githubUsername', githubUsername.value);
-    localStorage.setItem('githubRepo', githubRepo.value);
-    localStorage.setItem('githubBranch', githubBranch.value);
-    localStorage.setItem('filePath', filePath.value);
-}
-
-loadSettings();
 
 // 拖放事件处理
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -197,19 +162,13 @@ function showMessage(text, type = 'info') {
 
 // 上传按钮点击事件
 uploadBtn.addEventListener('click', async () => {
-    saveSettings();
+    const password = uploadPassword.value;
     
-    const username = githubUsername.value;
-    const repo = githubRepo.value;
-    const branch = githubBranch.value;
-    let path = filePath.value;
-    
-    // 配置验证
-    if (!username || !repo) {
-        showMessage('请输入GitHub用户名和仓库名', 'error');
+    // 验证
+    if (!password) {
+        showMessage('请输入上传密码', 'error');
         return;
     }
-    if (path && !path.endsWith('/')) path += '/';
     if (files.length === 0) {
         showMessage('没有文件可上传', 'error');
         return;
@@ -219,27 +178,31 @@ uploadBtn.addEventListener('click', async () => {
     uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>上传中...';
     
     try {
-        // 收集成功上传的文件
-        const successFiles = [];
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            try {
-                // 通过Vercel云函数上传文件
-                await uploadFileViaCloudFunction(file, username, repo, branch, path, i);
-                successFiles.push({
-                    name: file.name,
-                    path: path + file.name
-                });
-            } catch (error) {
-                showMessage(`文件 "${file.name}" 上传失败: ${error.message}`, 'error');
-                console.error(`文件 "${file.name}" 上传失败:`, error);
+        if (files.length === 1) {
+            // 单个文件上传，使用合并的云函数
+            await uploadSingleFile(files[0], password);
+            showMessage(`成功上传 1 个文件，已更新文档`, 'success');
+        } else {
+            // 多个文件上传，使用原有方式
+            const successFiles = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                try {
+                    const filePath = await uploadFileViaCloudFunction(file, password, i);
+                    successFiles.push({
+                        name: file.name,
+                        path: filePath
+                    });
+                } catch (error) {
+                    showMessage(`文件 "${file.name}" 上传失败: ${error.message}`, 'error');
+                    console.error(`文件 "${file.name}" 上传失败:`, error);
+                }
             }
-        }
-        
-        // 所有文件上传完成后，触发工作流
-        if (successFiles.length > 0) {
-            await triggerWorkflowViaCloudFunction(successFiles, username, repo);
-            showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已通过file_uploaded更新文档`, 'success');
+            
+            if (successFiles.length > 0) {
+                await triggerWorkflowViaCloudFunction(successFiles, password);
+                showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已更新文档`, 'success');
+            }
         }
         
         // 清空文件列表
@@ -254,33 +217,32 @@ uploadBtn.addEventListener('click', async () => {
     }
 });
 
-// 通过Vercel云函数上传文件
-async function uploadFileViaCloudFunction(file, username, repo, branch, path, fileIndex) {
+// 单个文件上传（使用合并的云函数）
+async function uploadSingleFile(file, password) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        const fullFilePath = path + file.name;
         
         reader.onload = async (event) => {
             try {
-                updateProgress(fileIndex, 20);
+                updateProgress(0, 20);
                 const base64Content = event.target.result.split(',')[1];
+                const batchTimestamp = new Date().toISOString();
                 
-                // 调用Vercel云函数
-                const response = await fetch('/api/upload', {
+                // 调用合并的云函数
+                const response = await fetch('/api/single-upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        username,
-                        repo,
-                        branch,
-                        path: fullFilePath,
-                        content: base64Content
+                        password,
+                        content: base64Content,
+                        batchTimestamp,
+                        fileName: file.name
                     })
                 });
                 
-                updateProgress(fileIndex, 60);
+                updateProgress(0, 60);
                 
                 const result = await response.json();
                 
@@ -288,7 +250,7 @@ async function uploadFileViaCloudFunction(file, username, repo, branch, path, fi
                     throw new Error(result.error || `上传失败: ${response.status}`);
                 }
                 
-                updateProgress(fileIndex, 100);
+                updateProgress(0, 100);
                 resolve();
             } catch (error) {
                 reject(error);
@@ -303,8 +265,54 @@ async function uploadFileViaCloudFunction(file, username, repo, branch, path, fi
     });
 }
 
-// 通过Vercel云函数触发工作流
-async function triggerWorkflowViaCloudFunction(successFiles, username, repo) {
+// 多个文件上传 - 通过云函数上传单个文件
+async function uploadFileViaCloudFunction(file, password, fileIndex) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = async (event) => {
+            try {
+                updateProgress(fileIndex, 20);
+                const base64Content = event.target.result.split(',')[1];
+                
+                // 调用上传云函数
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password,
+                        content: base64Content,
+                        fileName: file.name
+                    })
+                });
+                
+                updateProgress(fileIndex, 60);
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || `上传失败: ${response.status}`);
+                }
+                
+                updateProgress(fileIndex, 100);
+                resolve(result.data.path); // 返回完整文件路径
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        reader.onerror = (error) => {
+            reject(new Error(`文件读取错误: ${error.message}`));
+        };
+        
+        reader.readAsDataURL(file);
+    });
+}
+
+// 多个文件上传 - 触发工作流
+async function triggerWorkflowViaCloudFunction(successFiles, password) {
     const batchTimestamp = new Date().toISOString();
     
     const response = await fetch('/api/trigger-workflow', {
@@ -313,8 +321,7 @@ async function triggerWorkflowViaCloudFunction(successFiles, username, repo) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            username,
-            repo,
+            password,
             batchFiles: successFiles,
             batchTimestamp
         })
