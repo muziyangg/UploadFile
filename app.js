@@ -1,21 +1,3 @@
-// 固定的GitHub配置信息
-const githubConfig = {
-    username: "muziyangg",       // 替换为实际用户名
-    repo: "Hugo-Upload",         // 替换为实际仓库名
-    branch: "main",              // 替换为实际分支名
-    filePath: "src/upload/assets/"   // 替换为实际存储路径
-};
-
-// 预定义的有效令牌名称的SHA-256哈希值（加盐后）
-const validTokenHashes = [
-    // 示例：这是"valid-token-1"经过加盐哈希后的结果
-    "09970c91dbaee7dc6d8dca4b75a7b524ad594f60744937828456b9315e1a52a0",
-    // 可以添加更多有效令牌的哈希值
-];
-
-// 盐值 - 应在实际部署时修改为随机字符串并保密
-const SALT = "mzy717yhr";  // 替换为实际盐值
-
 // DOM元素获取
 const dropArea = document.getElementById('dropArea');
 const fileInput = document.getElementById('fileInput');
@@ -25,97 +7,44 @@ const fileCount = document.getElementById('fileCount');
 const emptyMessage = document.getElementById('emptyMessage');
 const uploadBtn = document.getElementById('uploadBtn');
 const statusMessage = document.getElementById('statusMessage');
-const tokenName = document.getElementById('tokenName');
-const verifyToken = document.getElementById('verifyToken');
-const verificationStatus = document.getElementById('verificationStatus');
+const githubUsername = document.getElementById('githubUsername');
+const githubRepo = document.getElementById('githubRepo');
+const githubBranch = document.getElementById('githubBranch');
+const filePath = document.getElementById('filePath');
 
 let files = [];
-let isVerified = false;
-let githubToken = ""; // 验证通过后获取的实际令牌
 
-// SHA-256 哈希函数（带盐）
-async function sha256WithSalt(str) {
-    // 将盐值与输入字符串组合
-    const saltedStr = SALT + str;
-    
-    // 编码为UTF-8
-    const encoder = new TextEncoder();
-    const data = encoder.encode(saltedStr);
-    
-    // 计算SHA-256哈希
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    
-    // 转换为十六进制字符串
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// 验证令牌名称
-verifyToken.addEventListener('click', async () => {
-    const inputTokenName = tokenName.value.trim();
-    
-    if (!inputTokenName) {
-        showVerificationStatus('请输入令牌名称', 'error');
-        return;
+// 加载保存的配置
+function loadSettings() {
+    const savedUsername = localStorage.getItem('githubUsername');
+    if (savedUsername) {
+        githubUsername.value = savedUsername;
     }
     
-    try {
-        // 计算输入值的加盐哈希
-        const inputHash = await sha256WithSalt(inputTokenName);
-        
-        // 与预定义的有效哈希值比较
-        if (validTokenHashes.includes(inputHash)) {
-            // 通过Vercel API获取实际的GitHub令牌
-            const response = await fetch('/api/get-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ tokenName: inputTokenName })
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok && result.token) {
-                githubToken = result.token;
-                isVerified = true;
-                showVerificationStatus('令牌验证成功，可以上传文件', 'success');
-                
-                // 如果有文件，启用上传按钮
-                if (files.length > 0) {
-                    uploadBtn.disabled = false;
-                }
-            } else {
-                throw new Error(result.message || '获取令牌失败');
-            }
-        } else {
-            isVerified = false;
-            githubToken = "";
-            showVerificationStatus('无效的令牌名称，请重试', 'error');
-            uploadBtn.disabled = true;
-        }
-    } catch (error) {
-        console.error('验证过程出错:', error);
-        showVerificationStatus('验证过程出错，请重试', 'error');
+    const savedRepo = localStorage.getItem('githubRepo');
+    if (savedRepo) {
+        githubRepo.value = savedRepo;
     }
-});
-
-// 显示验证状态
-function showVerificationStatus(text, type = 'info') {
-    verificationStatus.textContent = text;
-    verificationStatus.classList.remove('hidden', 'text-green-600', 'text-red-600', 'text-blue-600');
     
-    switch(type) {
-        case 'success':
-            verificationStatus.classList.add('text-green-600');
-            break;
-        case 'error':
-            verificationStatus.classList.add('text-red-600');
-            break;
-        default:
-            verificationStatus.classList.add('text-blue-600');
+    const savedBranch = localStorage.getItem('githubBranch');
+    if (savedBranch) {
+        githubBranch.value = savedBranch;
+    }
+    
+    const savedFilePath = localStorage.getItem('filePath');
+    if (savedFilePath) {
+        filePath.value = savedFilePath;
     }
 }
+
+function saveSettings() {
+    localStorage.setItem('githubUsername', githubUsername.value);
+    localStorage.setItem('githubRepo', githubRepo.value);
+    localStorage.setItem('githubBranch', githubBranch.value);
+    localStorage.setItem('filePath', filePath.value);
+}
+
+loadSettings();
 
 // 拖放事件处理
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -184,13 +113,7 @@ function addFiles(newFiles) {
     
     files = [...files, ...uniqueFiles];
     renderFileList();
-    
-    // 如果已验证，启用上传按钮
-    if (isVerified) {
-        uploadBtn.disabled = false;
-    } else {
-        showMessage('请先验证令牌才能上传文件', 'info');
-    }
+    uploadBtn.disabled = false;
 }
 
 // 渲染文件列表
@@ -274,9 +197,21 @@ function showMessage(text, type = 'info') {
 
 // 上传按钮点击事件
 uploadBtn.addEventListener('click', async () => {
-    // 检查是否已验证
-    if (!isVerified || !githubToken) {
-        showMessage('请先验证令牌', 'error');
+    saveSettings();
+    
+    const username = githubUsername.value;
+    const repo = githubRepo.value;
+    const branch = githubBranch.value;
+    let path = filePath.value;
+    
+    // 配置验证
+    if (!username || !repo) {
+        showMessage('请输入GitHub用户名和仓库名', 'error');
+        return;
+    }
+    if (path && !path.endsWith('/')) path += '/';
+    if (files.length === 0) {
+        showMessage('没有文件可上传', 'error');
         return;
     }
     
@@ -289,11 +224,11 @@ uploadBtn.addEventListener('click', async () => {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             try {
-                // 上传单个文件，通过Vercel API代理
-                await uploadFileViaVercel(file, githubToken, i);
+                // 通过Vercel云函数上传文件
+                await uploadFileViaCloudFunction(file, username, repo, branch, path, i);
                 successFiles.push({
                     name: file.name,
-                    path: githubConfig.filePath + file.name
+                    path: path + file.name
                 });
             } catch (error) {
                 showMessage(`文件 "${file.name}" 上传失败: ${error.message}`, 'error');
@@ -301,10 +236,10 @@ uploadBtn.addEventListener('click', async () => {
             }
         }
         
-        // 所有文件上传完成后，触发工作流更新MD文档
+        // 所有文件上传完成后，触发工作流
         if (successFiles.length > 0) {
-            await triggerBatchWorkflowViaVercel(successFiles, githubToken);
-            showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已更新文档`, 'success');
+            await triggerWorkflowViaCloudFunction(successFiles, username, repo);
+            showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已通过file_uploaded更新文档`, 'success');
         }
         
         // 清空文件列表
@@ -319,66 +254,38 @@ uploadBtn.addEventListener('click', async () => {
     }
 });
 
-// 通过Vercel API批量触发工作流
-async function triggerBatchWorkflowViaVercel(successFiles, token) {
-    const batchTimestamp = new Date().toISOString();
-    try {
-        const response = await fetch('/api/trigger-workflow', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                token,
-                githubConfig,
-                batchFiles: successFiles,
-                batchTimestamp
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.message || `工作流触发失败: ${response.status}`);
-        }
-        
-        console.log(`批量工作流触发成功，共处理 ${successFiles.length} 个文件`);
-    } catch (error) {
-        console.error('批量工作流触发出错:', error);
-        throw error;
-    }
-}
-
-// 通过Vercel API上传文件到GitHub
-async function uploadFileViaVercel(file, token, fileIndex) {
+// 通过Vercel云函数上传文件
+async function uploadFileViaCloudFunction(file, username, repo, branch, path, fileIndex) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        const fullFilePath = githubConfig.filePath + file.name;
+        const fullFilePath = path + file.name;
         
         reader.onload = async (event) => {
             try {
                 updateProgress(fileIndex, 20);
                 const base64Content = event.target.result.split(',')[1];
                 
-                // 通过Vercel API上传文件
-                const response = await fetch('/api/upload-file', {
+                // 调用Vercel云函数
+                const response = await fetch('/api/upload', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        token,
-                        githubConfig,
-                        fileName: file.name,
-                        filePath: fullFilePath,
+                        username,
+                        repo,
+                        branch,
+                        path: fullFilePath,
                         content: base64Content
                     })
                 });
                 
+                updateProgress(fileIndex, 60);
+                
                 const result = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(result.message || `上传失败: ${response.status}`);
+                    throw new Error(result.error || `上传失败: ${response.status}`);
                 }
                 
                 updateProgress(fileIndex, 100);
@@ -394,6 +301,32 @@ async function uploadFileViaVercel(file, token, fileIndex) {
         
         reader.readAsDataURL(file);
     });
+}
+
+// 通过Vercel云函数触发工作流
+async function triggerWorkflowViaCloudFunction(successFiles, username, repo) {
+    const batchTimestamp = new Date().toISOString();
+    
+    const response = await fetch('/api/trigger-workflow', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            username,
+            repo,
+            batchFiles: successFiles,
+            batchTimestamp
+        })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(result.error || `工作流触发失败: ${response.status}`);
+    }
+    
+    return result;
 }
 
 // 更新进度条
