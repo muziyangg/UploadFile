@@ -1,0 +1,2 @@
+# 用于GitHub Actions工作流的Python依赖
+python-dotenv>=1.0.0
