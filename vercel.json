@@ -1,7 +1,7 @@
 {
   "buildCommand": "echo 'No build required'",
   "outputDirectory": ".",
-  "devCommand": "npx serve . -l 3000",  
+  "devCommand": "npx serve . -l 3000",
   "framework": null,
   "redirects": [
     {
@@ -11,12 +11,13 @@
   ],
   "functions": {
     "api/*.js": {
-      "runtime": "nodejs18.x" 
+      "runtime": "nodejs@18.x"
     }
   },
   "build": {
     "env": {
-      "PYTHON_VERSION": "3.10" 
+      "PYTHON_VERSION": "3.10"
     }
   }
 }
+    
