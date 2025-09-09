@@ -1,12 +1,23 @@
 {
   "buildCommand": "echo 'No build required'",
   "outputDirectory": ".",
-  "devCommand": "echo 'Starting development server'",
+  "devCommand": "npx serve . -l 3000",
   "framework": null,
   "redirects": [
     {
       "source": "/",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs@18.x"
+    }
+  },
+  "build": {
+    "env": {
+      "PYTHON_VERSION": "3.10"
+    }
+  }
 }
+    
