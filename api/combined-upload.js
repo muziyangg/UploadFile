@@ -58,14 +58,18 @@ module.exports = async (req, res) => {
             (error, stdout, stderr) => {
                 if (error) {
                     console.error(`执行错误: ${error.message}`);
+                    // 确保返回JSON格式的错误
                     return res.status(500).json({ 
-                        error: `执行脚本失败: ${error.message}` 
+                        error: `执行脚本失败: ${error.message}`,
+                        details: stderr  // 可选：附加详细错误信息
                     });
                 }
                 if (stderr) {
                     console.error(`脚本错误输出: ${stderr}`);
+                    // 确保返回JSON格式的错误
                     return res.status(500).json({ 
-                        error: `脚本执行错误: ${stderr}` 
+                        error: `脚本执行错误`,
+                        details: stderr.trim()  // 修剪多余空格，确保JSON格式
                     });
                 }
                 
@@ -73,10 +77,7 @@ module.exports = async (req, res) => {
                 res.status(200).json({ 
                     success: true, 
                     message: '文件已成功上传并处理',
-                    output: stdout,
-                    data: {
-                        path: `src/upload/assets/${fileName}`
-                    }
+                    output: stdout
                 });
             }
         );
