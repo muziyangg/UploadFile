@@ -1,5 +1,5 @@
 const { exec } = require('child_process');
-const path = require('path');
+const path = require('path');  // 保留path模块的引用
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -30,10 +30,12 @@ module.exports = async (req, res) => {
         let sha = null;
         const { GITHUB_USERNAME, GITHUB_REPO, GITHUB_BRANCH, GITHUB_TOKEN, FILE_STORAGE_PATH } = process.env;
         
-        // 处理文件路径
-        let path = FILE_STORAGE_PATH;
-        if (path && !path.endsWith('/')) path += '/';
-        const fullFilePath = path + fileName;
+        // 关键修复：将变量名从path改为fileStoragePath，避免与path模块冲突
+        let fileStoragePath = FILE_STORAGE_PATH;
+        if (fileStoragePath && !fileStoragePath.endsWith('/')) {
+            fileStoragePath += '/';
+        }
+        const fullFilePath = fileStoragePath + fileName;
         
         // 检查文件是否已存在
         const checkUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${fullFilePath}?ref=${GITHUB_BRANCH}`;
@@ -90,6 +92,7 @@ module.exports = async (req, res) => {
         }];
         
         const batchFilesStr = JSON.stringify(fileInfo);
+        // 使用path模块的join方法（此时path是正确的模块引用）
         const pythonScriptPath = path.join(process.cwd(), 'upload.py');
         
         // 执行Python脚本
