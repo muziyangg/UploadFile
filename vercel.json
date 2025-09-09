@@ -1,17 +1,12 @@
 {
   "buildCommand": "echo 'No build required'",
   "outputDirectory": ".",
-  "devCommand": "npx serve . -l 3000",
+  "devCommand": "echo 'Starting development server'",
   "framework": null,
   "redirects": [
     {
       "source": "/",
       "destination": "/index.html"
     }
-  ],
-  "build": {
-    "env": {
-      "PYTHON_VERSION": "3.10"
-    }
-  }
+  ]
 }
