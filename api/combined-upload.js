@@ -97,31 +97,31 @@ module.exports = async (req, res) => {
         
         // 执行Python脚本
         exec(
-            `python ${pythonScriptPath} '${batchFilesStr}' '${batchTimestamp}'`,
-            (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`执行错误: ${error.message}`);
-                    return res.status(500).json({ 
-                        error: `执行脚本失败: ${error.message}`,
-                        details: stderr
-                    });
-                }
-                if (stderr) {
-                    console.error(`脚本错误输出: ${stderr}`);
-                    return res.status(500).json({ 
-                        error: `脚本执行错误`,
-                        details: stderr.trim()
-                    });
-                }
-                
-                console.log(`脚本输出: ${stdout}`);
-                res.status(200).json({ 
-                    success: true, 
-                    message: '文件已成功上传到GitHub并调用脚本处理',
-                    output: stdout
+        `python3 ${pythonScriptPath} '${batchFilesStr}' '${batchTimestamp}'`,  // 将python改为python3
+        (error, stdout, stderr) => {
+            if (error) {
+                console.error(`执行错误: ${error.message}`);
+                return res.status(500).json({ 
+                    error: `执行脚本失败: ${error.message}`,
+                    details: stderr
                 });
             }
-        );
+            if (stderr) {
+                console.error(`脚本错误输出: ${stderr}`);
+                return res.status(500).json({ 
+                    error: `脚本执行错误`,
+                    details: stderr.trim()
+                });
+            }
+            
+            console.log(`脚本输出: ${stdout}`);
+            res.status(200).json({ 
+                success: true, 
+                message: '文件已成功上传到GitHub并调用脚本处理',
+                output: stdout
+            });
+        }
+    );
 
     } catch (error) {
         console.error('处理过程出错:', error);
