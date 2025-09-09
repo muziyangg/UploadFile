@@ -95,33 +95,17 @@ module.exports = async (req, res) => {
         // 使用path模块的join方法（此时path是正确的模块引用）
         const pythonScriptPath = path.join(process.cwd(), 'upload.py');
         
-        // 执行Python脚本
-        exec(
-        `python3 ${pythonScriptPath} '${batchFilesStr}' '${batchTimestamp}'`,  // 将python改为python3
-        (error, stdout, stderr) => {
-            if (error) {
-                console.error(`执行错误: ${error.message}`);
-                return res.status(500).json({ 
-                    error: `执行脚本失败: ${error.message}`,
-                    details: stderr
-                });
-            }
-            if (stderr) {
-                console.error(`脚本错误输出: ${stderr}`);
-                return res.status(500).json({ 
-                    error: `脚本执行错误`,
-                    details: stderr.trim()
-                });
-            }
-            
-            console.log(`脚本输出: ${stdout}`);
-            res.status(200).json({ 
-                success: true, 
-                message: '文件已成功上传到GitHub并调用脚本处理',
-                output: stdout
-            });
-        }
-    );
+        const FileProcessor = require('./file-processor');
+
+        // 在您的 try 块中替换 exec 调用：
+        const fileProcessor = new FileProcessor();
+        const processResult = await fileProcessor.processFiles(fileInfo, batchTimestamp);
+        console.log('处理结果:', processResult);
+        res.status(200).json({ 
+            success: true, 
+            message: '文件已成功上传到GitHub并处理',
+            output: processResult
+        });
 
     } catch (error) {
         console.error('处理过程出错:', error);
