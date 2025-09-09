@@ -1,7 +1,6 @@
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
 
 // 确保上传目录存在
 const ensureUploadDir = async () => {

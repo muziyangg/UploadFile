@@ -13,10 +13,10 @@ MD_FILE_PATH = os.path.join("src", "upload.md")  # Markdown文件路径
 UPLOAD_RECORDS = "upload_records.json"  # 上传记录JSON文件
 
 # GitHub配置 - 这些应该从环境变量中获取
-GITHUB_REPO_OWNER = os.environ.get('GITHUB_REPO_OWNER', 'your-github-username')
-GITHUB_REPO_NAME = os.environ.get('GITHUB_REPO_NAME', 'your-repo-name')
-GITHUB_TARGET_DIR = os.environ.get('GITHUB_TARGET_DIR', 'docs/uploads')  # GitHub上的目标目录
-GITHUB_ACCESS_TOKEN = os.environ.get('GITHUB_ACCESS_TOKEN')  # GitHub访问令牌
+GITHUB_REPO_OWNER = os.environ.get('GITHUB_USERNAME', 'muziyangg')
+GITHUB_REPO_NAME = os.environ.get('GITHUB_REPO', 'Hugo-Upload')
+GITHUB_TARGET_DIR = os.environ.get('FILE_STORAGE_PATH', 'src/upload/assets/')  # GitHub上的目标目录
+GITHUB_ACCESS_TOKEN = os.environ.get('GITHUB_TOKEN')  # GitHub访问令牌
 
 
 def ensure_directory_exists(file_path):
