@@ -2,12 +2,21 @@ import os
 import json
 import argparse
 import time
+import requests
 from datetime import datetime
 from pathlib import Path
+from github import Github
+from github import InputGitTreeElement
 
 # 配置目标文件和目录
 MD_FILE_PATH = os.path.join("src", "upload.md")  # Markdown文件路径
 UPLOAD_RECORDS = "upload_records.json"  # 上传记录JSON文件
+
+# GitHub配置 - 这些应该从环境变量中获取
+GITHUB_REPO_OWNER = os.environ.get('GITHUB_REPO_OWNER', 'your-github-username')
+GITHUB_REPO_NAME = os.environ.get('GITHUB_REPO_NAME', 'your-repo-name')
+GITHUB_TARGET_DIR = os.environ.get('GITHUB_TARGET_DIR', 'docs/uploads')  # GitHub上的目标目录
+GITHUB_ACCESS_TOKEN = os.environ.get('GITHUB_ACCESS_TOKEN')  # GitHub访问令牌
 
 
 def ensure_directory_exists(file_path):
@@ -193,6 +202,8 @@ def update_markdown_file(new_records):
                 print(f"警告: 有 {missing} 条新记录未在MD文件中找到")
     else:
         print(f"错误: MD文件未创建成功")
+        
+    return updated_content
 
 
 def format_file_link(file_path):
@@ -218,8 +229,59 @@ def format_file_link(file_path):
     return f"[{file_name_without_ext}]({encoded_path})"
 
 
+def upload_to_github(content, file_name="upload.md"):
+    """
+    将内容上传到GitHub仓库的指定目录
+    
+    参数:
+    content: 要上传的文件内容
+    file_name: 要在GitHub上保存的文件名
+    """
+    if not GITHUB_ACCESS_TOKEN:
+        raise ValueError("GitHub访问令牌未配置，请设置GITHUB_ACCESS_TOKEN环境变量")
+    
+    try:
+        # 初始化GitHub客户端
+        g = Github(GITHUB_ACCESS_TOKEN)
+        
+        # 获取仓库
+        repo = g.get_repo(f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}")
+        print(f"成功连接到GitHub仓库: {GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}")
+        
+        # 构建目标路径
+        target_path = f"{GITHUB_TARGET_DIR}/{file_name}"
+        print(f"准备上传文件到: {target_path}")
+        
+        # 检查文件是否已存在
+        try:
+            # 获取当前文件的SHA，用于更新
+            file = repo.get_contents(target_path)
+            sha = file.sha
+            print(f"文件已存在，将进行更新: {target_path}")
+        except:
+            # 文件不存在，不需要SHA
+            sha = None
+            print(f"文件不存在，将创建新文件: {target_path}")
+        
+        # 提交文件
+        commit_message = f"更新上传记录: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        response = repo.create_file(
+            path=target_path,
+            message=commit_message,
+            content=content,
+            sha=sha  # 如果是更新，需要提供当前SHA
+        )
+        
+        print(f"文件已成功上传到GitHub: {response['content'].html_url}")
+        return response
+        
+    except Exception as e:
+        print(f"上传到GitHub失败: {str(e)}")
+        raise
+
+
 def main():
-    parser = argparse.ArgumentParser(description='处理文件上传记录并更新Markdown文档')
+    parser = argparse.ArgumentParser(description='处理文件上传记录并更新Markdown文档，然后上传到GitHub')
     parser.add_argument('batch_files', help='JSON格式的批量文件信息')
     parser.add_argument('batch_timestamp', help='批量处理的时间戳')
 
@@ -245,9 +307,12 @@ def main():
         processed_records = save_records(new_records)
 
         # 批量更新Markdown
-        update_markdown_file(processed_records)
+        md_content = update_markdown_file(processed_records)
+        
+        # 将更新后的Markdown文件上传到GitHub
+        upload_to_github(md_content)
 
-        print(f"成功更新 {len(processed_records)} 条上传记录")
+        print(f"成功更新 {len(processed_records)} 条上传记录并上传到GitHub")
     except json.JSONDecodeError as e:
         print(f"JSON解析错误: {e}")
         exit(1)

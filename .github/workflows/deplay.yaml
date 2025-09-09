@@ -3,86 +3,21 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-    if: "!contains(github.event.head_commit.message, 'Upload file:')"
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-  repository_dispatch:
-    types: [file_uploaded]
-
-concurrency:
-  group: ${{ github.ref }}-pages-deployment
-  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
-      repository-projects: write
-
     steps:
-      - name: Print event info
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Event action: ${{ github.event.action }}"
-    
-      - name: Checkout current repo
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: 等待前序任务完成
-        run: |
-          echo "等待可能正在运行的工作流完成..."
-          sleep 10
-          
-      - name: 拉取最新代码
-        run: |
-          git pull origin main
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          
-      - name: Process uploaded files (batch)
-        if: github.event_name == 'repository_dispatch' && github.event.action == 'file_uploaded'
-        run: |
-          BATCH_FILES=$(echo '${{ toJSON(github.event.client_payload.batch_files) }}' | jq -c .)
-          echo "处理文件列表: $BATCH_FILES"
-          FILE_COUNT=$(echo '${{ toJSON(github.event.client_payload.batch_files) }}' | jq '. | length')
-          echo "文件数量: $FILE_COUNT"
-          python upload.py "$BATCH_FILES" "${{ github.event.client_payload.batch_timestamp }}"
-          
-      - name: Commit changes
-        if: github.event_name == 'repository_dispatch' && github.event.action == 'file_uploaded'
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git pull origin main
-          
-          # 只添加存在的文件，避免错误
-          if [ -f "src/upload.md" ]; then
-            git add src/upload.md
-          fi
-          if [ -f "src/upload_records.json" ]; then
-            git add src/upload_records.json
-          fi
-          
-          FILE_COUNT=$(echo '${{ toJSON(github.event.client_payload.batch_files) }}' | jq '. | length')
-          # 检查是否有需要提交的更改
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update upload records for batch of $FILE_COUNT files"
-            git push
-          fi
-         
-          
-          
+        
       - name: Setup Pages
         uses: actions/configure-pages@v4
         

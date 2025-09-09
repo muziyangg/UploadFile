@@ -206,8 +206,9 @@ uploadBtn.addEventListener('click', async () => {
             }
             
             if (successFiles.length > 0) {
-                await triggerWorkflowViaCloudFunction(successFiles, password);
-                showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已更新文档`, 'success');
+                // 调用新的API将文件上传到GitHub
+                await uploadToGitHub(successFiles, password);
+                showMessage(`成功上传 ${successFiles.length}/${files.length} 个文件，已更新文档并上传到GitHub`, 'success');
             }
         }
         
@@ -224,7 +225,6 @@ uploadBtn.addEventListener('click', async () => {
     }
 });
 
-// 单个文件上传（使用合并的云函数）
 async function uploadSingleFile(file, password) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -235,8 +235,8 @@ async function uploadSingleFile(file, password) {
                 const base64Content = event.target.result.split(',')[1];
                 const batchTimestamp = new Date().toISOString();
                 
-                // 调用合并的云函数
-                const response = await fetch('/api/single-upload', {
+                // 调用新的合并API，同时处理文件上传和Python脚本调用
+                const response = await fetch('/api/combined-upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -259,7 +259,7 @@ async function uploadSingleFile(file, password) {
                     // 存储当前尝试的密码用于下次比较
                     const currentPassword = password;
                     
-                    // 抛出包含错误信息的异常，增加密码内容用于检测
+                    // 抛出包含错误信息的异常
                     const error = new Error(result.error || `上传失败: ${response.status}`);
                     error.password = currentPassword;
                     throw error;
@@ -283,6 +283,7 @@ async function uploadSingleFile(file, password) {
         reader.readAsDataURL(file);
     });
 }
+    
 
 // 多个文件上传 - 通过云函数上传单个文件
 async function uploadFileViaCloudFunction(file, password, fileIndex) {
@@ -324,9 +325,7 @@ async function uploadFileViaCloudFunction(file, password, fileIndex) {
                     throw error;
                 }
                 
-                updateProgress(fileIndex, 100);
-                // 成功后重置上次尝试密码
-                lastAttemptedPassword = null;
+                updateProgress(fileIndex, 80);
                 resolve(result.data.path); // 返回完整文件路径
             } catch (error) {
                 updateProgress(fileIndex, 0);
@@ -343,11 +342,11 @@ async function uploadFileViaCloudFunction(file, password, fileIndex) {
     });
 }
 
-// 多个文件上传 - 触发工作流
-async function triggerWorkflowViaCloudFunction(successFiles, password) {
-    const batchTimestamp = new Date().toISOString();
+// 新函数：上传到GitHub
+async function uploadToGitHub(successFiles, password, batchTimestamp = null) {
+    const timestamp = batchTimestamp || new Date().toISOString();
     
-    const response = await fetch('/api/trigger-workflow', {
+    const response = await fetch('/api/upload-to-github', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -355,7 +354,7 @@ async function triggerWorkflowViaCloudFunction(successFiles, password) {
         body: JSON.stringify({
             password,
             batchFiles: successFiles,
-            batchTimestamp
+            batchTimestamp: timestamp
         })
     });
     
@@ -363,7 +362,7 @@ async function triggerWorkflowViaCloudFunction(successFiles, password) {
     
     if (!response.ok) {
         // 抛出包含错误信息的异常
-        const error = new Error(result.error || `工作流触发失败: ${response.status}`);
+        const error = new Error(result.error || `上传到GitHub失败: ${response.status}`);
         error.password = password;
         throw error;
     }
@@ -406,6 +405,9 @@ function handleUploadError(error, fileName = null, fileIndex = 0) {
         } else {
             files.forEach((_, index) => updateProgress(index, 0));
         }
+    } else if (error.message.includes('上传到GitHub失败')) {
+        // GitHub上传错误
+        showMessage(`同步到GitHub失败: ${error.message}`, 'error');
     } else {
         // 其他错误
         const msg = fileName ? 
