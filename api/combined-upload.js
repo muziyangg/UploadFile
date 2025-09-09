@@ -1,17 +1,5 @@
 const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs').promises;
-
-// 确保上传目录存在
-const ensureUploadDir = async () => {
-    const uploadDir = path.join(process.cwd(), 'src', 'upload', 'assets');
-    try {
-        await fs.access(uploadDir);
-    } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-    }
-    return uploadDir;
-};
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -19,71 +7,122 @@ module.exports = async (req, res) => {
     }
 
     const { password, content, batchTimestamp, fileName } = req.body;
-
+    
     // 验证必要参数
     if (!password || !content || !batchTimestamp || !fileName) {
-        return res.status(400).json({ error: '缺少必要的参数' });
+        return res.status(400).json({ error: '缺少必要参数' });
     }
-
+    
+    // 验证环境变量配置
+    if (!process.env.GITHUB_TOKEN || !process.env.UPLOAD_PASSWORD || 
+        !process.env.GITHUB_USERNAME || !process.env.GITHUB_REPO || 
+        !process.env.GITHUB_BRANCH || !process.env.FILE_STORAGE_PATH) {
+        return res.status(500).json({ error: '服务器配置不完整' });
+    }
+    
+    // 验证上传密码
+    if (password !== process.env.UPLOAD_PASSWORD) {
+        return res.status(403).json({ error: '密码错误，拒绝上传' });
+    }
+    
     try {
-        // 1. 验证密码 (这里应该添加实际的密码验证逻辑)
-        // const isValid = await verifyPassword(password);
-        // if (!isValid) {
-        //     return res.status(403).json({ error: '密码错误，拒绝上传' });
-        // }
-
-        // 2. 确保上传目录存在
-        const uploadDir = await ensureUploadDir();
+        // 1. 上传文件到GitHub
+        let sha = null;
+        const { GITHUB_USERNAME, GITHUB_REPO, GITHUB_BRANCH, GITHUB_TOKEN, FILE_STORAGE_PATH } = process.env;
         
-        // 3. 保存文件
-        const filePath = path.join(uploadDir, fileName);
-        const buffer = Buffer.from(content, 'base64');
-        await fs.writeFile(filePath, buffer);
+        // 处理文件路径
+        let path = FILE_STORAGE_PATH;
+        if (path && !path.endsWith('/')) path += '/';
+        const fullFilePath = path + fileName;
         
-        console.log(`文件已保存: ${filePath}`);
-
-        // 4. 准备调用Python脚本的参数
+        // 检查文件是否已存在
+        const checkUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${fullFilePath}?ref=${GITHUB_BRANCH}`;
+        
+        const checkResponse = await fetch(checkUrl, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Vercel Cloud Function'
+            }
+        });
+        
+        if (checkResponse.status === 200) {
+            const fileData = await checkResponse.json();
+            sha = fileData.sha;
+        } else if (checkResponse.status !== 404) {
+            const errorData = await checkResponse.json();
+            throw new Error(`获取文件信息失败: ${errorData.message || checkResponse.statusText}`);
+        }
+        
+        // 上传文件
+        const uploadUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/${fullFilePath}`;
+        
+        const payload = {
+            message: `Upload file: ${fileName}`,
+            content: content,
+            branch: GITHUB_BRANCH
+        };
+        
+        if (sha) {
+            payload.sha = sha;
+        }
+        
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Vercel Cloud Function'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(`文件上传失败: ${errorData.message || uploadResponse.statusText}`);
+        }
+        
+        // 2. 上传成功后调用Python脚本
         const fileInfo = [{
             name: fileName,
-            path: `src/upload/assets/${fileName}`
+            path: fullFilePath  // 传递GitHub上的文件路径
         }];
         
         const batchFilesStr = JSON.stringify(fileInfo);
         const pythonScriptPath = path.join(process.cwd(), 'upload.py');
         
-        // 5. 执行Python脚本
+        // 执行Python脚本
         exec(
             `python ${pythonScriptPath} '${batchFilesStr}' '${batchTimestamp}'`,
             (error, stdout, stderr) => {
                 if (error) {
                     console.error(`执行错误: ${error.message}`);
-                    // 确保返回JSON格式的错误
                     return res.status(500).json({ 
                         error: `执行脚本失败: ${error.message}`,
-                        details: stderr  // 可选：附加详细错误信息
+                        details: stderr
                     });
                 }
                 if (stderr) {
                     console.error(`脚本错误输出: ${stderr}`);
-                    // 确保返回JSON格式的错误
                     return res.status(500).json({ 
                         error: `脚本执行错误`,
-                        details: stderr.trim()  // 修剪多余空格，确保JSON格式
+                        details: stderr.trim()
                     });
                 }
                 
                 console.log(`脚本输出: ${stdout}`);
                 res.status(200).json({ 
                     success: true, 
-                    message: '文件已成功上传并处理',
+                    message: '文件已成功上传到GitHub并调用脚本处理',
                     output: stdout
                 });
             }
         );
 
     } catch (error) {
-        console.error('API错误:', error);
-        res.status(500).json({ error: `服务器错误: ${error.message}` });
+        console.error('处理过程出错:', error);
+        return res.status(500).json({ error: error.message });
     }
 };
     

@@ -8,22 +8,29 @@ from pathlib import Path
 from github import Github
 from github import InputGitTreeElement
 
-# 配置目标文件和目录
-MD_FILE_PATH = os.path.join("src", "upload.md")  # Markdown文件路径
-UPLOAD_RECORDS = "upload_records.json"  # 上传记录JSON文件
+# 配置目标文件和目录（本地临时文件）
+# 注意：在Vercel环境中，这些文件会保存在/tmp目录下
+MD_FILE_PATH = os.path.join("/tmp", "src", "upload.md")  # Markdown文件路径（使用临时目录）
+UPLOAD_RECORDS = os.path.join("/tmp", "upload_records.json")  # 上传记录JSON文件（使用临时目录）
 
-# GitHub配置 - 这些应该从环境变量中获取
-GITHUB_REPO_OWNER = os.environ.get('GITHUB_USERNAME', 'muziyangg')
-GITHUB_REPO_NAME = os.environ.get('GITHUB_REPO', 'Hugo-Upload')
-GITHUB_TARGET_DIR = os.environ.get('FILE_STORAGE_PATH', 'src/upload/assets/')  # GitHub上的目标目录
-GITHUB_ACCESS_TOKEN = os.environ.get('GITHUB_TOKEN')  # GitHub访问令牌
+# 【文件上传仓库】配置（与JS上传的仓库保持一致）
+# 这些环境变量与JS中使用的保持一致
+FILE_GITHUB_REPO_OWNER = os.environ.get('GITHUB_USERNAME', '')
+FILE_GITHUB_REPO_NAME = os.environ.get('GITHUB_REPO', '')
+FILE_GITHUB_TARGET_DIR = os.environ.get('FILE_STORAGE_PATH', '')
+
+# 【Markdown文档上传仓库】独立配置（新添加的独立仓库信息）
+# 这些是新的环境变量，用于指定Markdown文档的目标仓库
+MD_GITHUB_REPO_OWNER = os.environ.get('MD_GITHUB_REPO_OWNER', '')  # Markdown仓库所有者
+MD_GITHUB_REPO_NAME = os.environ.get('MD_GITHUB_REPO_NAME', '')    # Markdown仓库名称
+MD_GITHUB_TARGET_DIR = os.environ.get('MD_GITHUB_TARGET_DIR', '')  # Markdown在目标仓库中的存储目录
+MD_GITHUB_ACCESS_TOKEN = os.environ.get('MD_GITHUB_ACCESS_TOKEN')  # Markdown仓库的访问令牌
 
 
 def ensure_directory_exists(file_path):
     """确保文件所在目录存在"""
     directory = os.path.dirname(file_path)
     Path(directory).mkdir(parents=True, exist_ok=True)
-    # 添加调试信息
     print(f"确保目录存在: {directory} - {'存在' if os.path.exists(directory) else '已创建'}")
 
 
@@ -33,14 +40,11 @@ def update_md_lastmod():
         print(f"MD文件不存在，无需更新lastmod: {MD_FILE_PATH}")
         return
 
-    # 获取当前时间并格式化为lastmod要求的格式
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 读取文件内容
     with open(MD_FILE_PATH, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    # 查找并更新lastmod行
     updated = False
     for i, line in enumerate(lines):
         if line.startswith('lastmod:'):
@@ -48,7 +52,6 @@ def update_md_lastmod():
             updated = True
             break
 
-    # 如果没有找到lastmod行，则添加它
     if not updated:
         for i, line in enumerate(lines):
             if line.startswith('date:'):
@@ -56,15 +59,13 @@ def update_md_lastmod():
                 updated = True
                 break
 
-    # 如果仍然没有找到合适的位置，在frontmatter末尾添加
     if not updated:
         for i, line in enumerate(lines):
-            if line.strip() == '---' and i > 0:  # 找到第二个---
+            if line.strip() == '---' and i > 0:
                 lines.insert(i, f'lastmod: {current_time}\n')
                 updated = True
                 break
 
-    # 写回文件
     if updated:
         with open(MD_FILE_PATH, 'w', encoding='utf-8') as f:
             f.writelines(lines)
@@ -91,15 +92,12 @@ def save_records(new_records):
     """保存多个新的上传记录，并更新MD文件的lastmod"""
     records = load_records()
 
-    # 处理每个新记录
     processed_records = []
     for record in new_records:
         timestamp = record['timestamp']
-        # 处理带有Z后缀的ISO时间格式
         if timestamp.endswith('Z'):
             timestamp = timestamp.replace('Z', '+00:00')
 
-        # 创建新记录
         processed_record = {
             "filename": record['filename'],
             "path": record['path'],
@@ -108,22 +106,17 @@ def save_records(new_records):
         }
         processed_records.append(processed_record)
 
-    # 添加到记录列表开头（保持最新的在前面）
     records = processed_records + records
 
-    # 保存更新后的记录
     with open(UPLOAD_RECORDS, 'w', encoding='utf-8') as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
-    # 验证保存结果
     if os.path.exists(UPLOAD_RECORDS):
         print(f"记录已保存: {UPLOAD_RECORDS} (新大小: {os.path.getsize(UPLOAD_RECORDS)} bytes)")
     else:
         print(f"警告: 记录文件未创建成功")
 
-    # 更新MD文件中的lastmod字段
     update_md_lastmod()
-
     return processed_records
 
 
@@ -131,7 +124,6 @@ def update_markdown_file(new_records):
     """更新Markdown文件，批量添加新的上传记录"""
     ensure_directory_exists(MD_FILE_PATH)
 
-    # 读取现有内容
     content = ""
     if os.path.exists(MD_FILE_PATH):
         file_size = os.path.getsize(MD_FILE_PATH)
@@ -139,57 +131,47 @@ def update_markdown_file(new_records):
         with open(MD_FILE_PATH, 'r', encoding='utf-8') as f:
             content = f.read()
     else:
-        # 如果文件不存在，创建并添加标题和表格头
         print(f"MD文件不存在，创建新文件: {MD_FILE_PATH}")
         content = "# 上传文件记录\n\n"
         content += "以下是所有上传文件的记录，按上传时间倒序排列：\n\n"
         content += "| 文件名 | 上传时间 | 文件链接 | 上传人 |\n"
         content += "|--------|----------|----------|--------|\n"
 
-    # 检查表格头是否存在，如果不存在则添加
     if "| 文件名 | 上传时间 | 文件链接 |" not in content:
         print("表格头不存在，添加表格结构")
         content += "\n| 文件名 | 上传时间 | 文件链接 | 上传人 |\n"
         content += "|--------|----------|----------|--------|\n"
 
-    # 构建新记录行
     new_rows = []
     for record in new_records:
         new_row = f"| {record['filename']} | {record['formatted_date']} | {format_file_link(record['path'])} | |"
         new_rows.append(new_row)
         print(f"添加新记录行: {new_row.strip()}")
 
-    # 找到表格开始位置并插入新行
     lines = content.split('\n')
     table_start_index = None
 
     for i, line in enumerate(lines):
         if "| 文件名 | 上传时间 | 文件链接 |" in line:
-            # 表格头的下一行是分隔线，新行应该插在分隔线后面
             table_start_index = i + 2
             break
 
     if table_start_index is not None:
-        # 批量插入所有新行
         lines[table_start_index:table_start_index] = new_rows
         print(f"插入 {len(new_rows)} 条新行到位置: {table_start_index}")
     else:
-        # 如果没找到表格头，直接添加到末尾
         lines.extend(new_rows)
         print(f"未找到表格头，添加 {len(new_rows)} 条新行到文件末尾")
 
-    # 写回文件
     updated_content = '\n'.join(lines)
     with open(MD_FILE_PATH, 'w', encoding='utf-8') as f:
         f.write(updated_content)
-        f.flush()  # 强制刷新缓冲区
-        os.fsync(f.fileno())  # 确保写入磁盘
+        f.flush()
+        os.fsync(f.fileno())
 
-    # 验证写入结果
     if os.path.exists(MD_FILE_PATH):
         new_size = os.path.getsize(MD_FILE_PATH)
         print(f"MD文件已更新: {MD_FILE_PATH} (新大小: {new_size} bytes)")
-        # 验证内容是否已写入
         with open(MD_FILE_PATH, 'r', encoding='utf-8') as f:
             content = f.read()
             missing = 0
@@ -207,93 +189,77 @@ def update_markdown_file(new_records):
 
 
 def format_file_link(file_path):
-    """
-    将文件路径转换为Markdown链接格式
-
-    入参: 完整文件路径，如 "src/upload/assets/DHCM00001-AVE766尿机.docx"
-    出参: Markdown链接，如 "[DHCM00001-AVE766尿机](assets/DHCM00001-AVE766尿机.docx)"
-    处理: 路径中的空格会被转换为%20
-    """
-    # 分割路径，提取文件名和相对路径
-    # 去掉前缀 "src/upload/"
+    """将文件路径转换为Markdown链接格式（指向原始文件仓库）"""
+    # 链接仍指向原始文件所在的仓库（与JS上传的仓库一致）
     relative_path = file_path.replace("src/upload/", "", 1)
-
-    # 提取文件名（不含扩展名）
     file_name = os.path.basename(file_path)
     file_name_without_ext = os.path.splitext(file_name)[0]
-
-    # 将路径中的空格转换为%20
     encoded_path = relative_path.replace(" ", "%20")
-
-    # 生成Markdown链接格式
     return f"[{file_name_without_ext}]({encoded_path})"
 
 
-def upload_to_github(content, file_name="upload.md"):
+def upload_md_to_github(content, file_name="upload.md"):
     """
-    将内容上传到GitHub仓库的指定目录
-    
-    参数:
-    content: 要上传的文件内容
-    file_name: 要在GitHub上保存的文件名
+    将Markdown内容上传到独立的GitHub仓库（与文件上传仓库不同）
     """
-    if not GITHUB_ACCESS_TOKEN:
-        raise ValueError("GitHub访问令牌未配置，请设置GITHUB_ACCESS_TOKEN环境变量")
+    # 验证Markdown仓库的环境变量是否配置
+    if not all([MD_GITHUB_REPO_OWNER, MD_GITHUB_REPO_NAME, MD_GITHUB_ACCESS_TOKEN]):
+        raise ValueError(
+            "Markdown仓库配置不完整，请设置以下环境变量: "
+            "MD_GITHUB_REPO_OWNER, MD_GITHUB_REPO_NAME, MD_GITHUB_ACCESS_TOKEN"
+        )
     
     try:
-        # 初始化GitHub客户端
-        g = Github(GITHUB_ACCESS_TOKEN)
+        # 初始化Markdown仓库的GitHub客户端
+        g = Github(MD_GITHUB_ACCESS_TOKEN)
         
-        # 获取仓库
-        repo = g.get_repo(f"{GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}")
-        print(f"成功连接到GitHub仓库: {GITHUB_REPO_OWNER}/{GITHUB_REPO_NAME}")
+        # 获取Markdown目标仓库
+        repo = g.get_repo(f"{MD_GITHUB_REPO_OWNER}/{MD_GITHUB_REPO_NAME}")
+        print(f"成功连接到Markdown目标仓库: {MD_GITHUB_REPO_OWNER}/{MD_GITHUB_REPO_NAME}")
         
-        # 构建目标路径
-        target_path = f"{GITHUB_TARGET_DIR}/{file_name}"
-        print(f"准备上传文件到: {target_path}")
+        # 构建Markdown文件在目标仓库中的路径
+        target_dir = MD_GITHUB_TARGET_DIR.rstrip('/') if MD_GITHUB_TARGET_DIR else ''
+        target_path = f"{target_dir}/{file_name}" if target_dir else file_name
+        print(f"准备上传Markdown文件到: {target_path}")
         
         # 检查文件是否已存在
+        sha = None
         try:
-            # 获取当前文件的SHA，用于更新
             file = repo.get_contents(target_path)
             sha = file.sha
-            print(f"文件已存在，将进行更新: {target_path}")
+            print(f"Markdown文件已存在，将进行更新: {target_path}")
         except:
-            # 文件不存在，不需要SHA
-            sha = None
-            print(f"文件不存在，将创建新文件: {target_path}")
+            print(f"Markdown文件不存在，将创建新文件: {target_path}")
         
-        # 提交文件
+        # 提交Markdown文件到目标仓库
         commit_message = f"更新上传记录: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         response = repo.create_file(
             path=target_path,
             message=commit_message,
             content=content,
-            sha=sha  # 如果是更新，需要提供当前SHA
+            sha=sha
         )
         
-        print(f"文件已成功上传到GitHub: {response['content'].html_url}")
+        print(f"Markdown文件已成功上传到独立仓库: {response['content'].html_url}")
         return response
         
     except Exception as e:
-        print(f"上传到GitHub失败: {str(e)}")
+        print(f"Markdown文件上传到独立仓库失败: {str(e)}")
         raise
 
 
 def main():
-    parser = argparse.ArgumentParser(description='处理文件上传记录并更新Markdown文档，然后上传到GitHub')
+    parser = argparse.ArgumentParser(description='处理文件上传记录并更新Markdown文档，上传到独立GitHub仓库')
     parser.add_argument('batch_files', help='JSON格式的批量文件信息')
     parser.add_argument('batch_timestamp', help='批量处理的时间戳')
 
     args = parser.parse_args()
 
     try:
-        # 解析批量文件信息
         batch_files = json.loads(args.batch_files)
         print(f"开始处理 {len(batch_files)} 个文件")
         print(f"批量处理时间戳: {args.batch_timestamp}")
 
-        # 为每个文件创建记录
         new_records = []
         for file_info in batch_files:
             new_record = {
@@ -303,16 +269,13 @@ def main():
             }
             new_records.append(new_record)
 
-        # 保存所有记录
         processed_records = save_records(new_records)
-
-        # 批量更新Markdown
         md_content = update_markdown_file(processed_records)
         
-        # 将更新后的Markdown文件上传到GitHub
-        upload_to_github(md_content)
+        # 上传到Markdown独立仓库
+        upload_md_to_github(md_content)
 
-        print(f"成功更新 {len(processed_records)} 条上传记录并上传到GitHub")
+        print(f"成功更新 {len(processed_records)} 条上传记录并上传到独立仓库")
     except json.JSONDecodeError as e:
         print(f"JSON解析错误: {e}")
         exit(1)
@@ -323,3 +286,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
