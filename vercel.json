@@ -9,15 +9,9 @@
       "destination": "/index.html"
     }
   ],
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs@18.x"
-    }
-  },
   "build": {
     "env": {
       "PYTHON_VERSION": "3.10"
     }
   }
 }
-    
