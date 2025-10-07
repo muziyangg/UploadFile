@@ -8,5 +8,16 @@
       "source": "/",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/*.js": {
+      "includeFiles": "**/*",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "env": {
+    "NODE_VERCEL": "1"
+  }
 }

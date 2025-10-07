@@ -15,7 +15,7 @@ export function getEnvironment() {
   }
   
   // 默认返回 'local'
-  return 'vercel';
+  return 'local';
 }
 
 // 从local-config.json文件读取配置
@@ -60,25 +60,37 @@ export function getConfig() {
   
   const env = getEnvironment();
   
-  if (env === 'vercel') {
-    // Vercel 环境，从环境变量获取配置
-    config = {
-      GITHUB_USERNAME: process.env.GITHUB_USERNAME || '',
-      GITHUB_REPO: process.env.GITHUB_REPO || '',
-      GITHUB_BRANCH: process.env.GITHUB_BRANCH || 'main',
-      GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
-      FILE_STORAGE_PATH: process.env.FILE_STORAGE_PATH || 'src/upload/assets/',
-      UPLOAD_PASSWORD: process.env.UPLOAD_PASSWORD || '',
-      MD_GITHUB_USERNAME: process.env.MD_GITHUB_USERNAME || '',
-      MD_GITHUB_REPO: process.env.MD_GITHUB_REPO || '',
-      MD_GITHUB_BRANCH: process.env.MD_GITHUB_BRANCH || 'main',
-      MD_GITHUB_TOKEN: process.env.MD_GITHUB_TOKEN || '',
-      MD_FILE_STORAGE_PATH: process.env.MD_FILE_STORAGE_PATH || 'content/post/',
-      MD_FILE_STORAGE_NAME: process.env.MD_FILE_STORAGE_NAME || '上传文件记录.md'
-    };
-  } else {
-    // 本地环境，使用默认空值配置
-    // 注意：在实际应用中，应在初始化时调用readLocalConfig()来异步加载配置
+  try {
+    if (env === 'vercel' && typeof process !== 'undefined' && process.env) {
+      // Vercel 环境，从环境变量获取配置
+      config = {
+        GITHUB_USERNAME: process.env.GITHUB_USERNAME || '',
+        GITHUB_REPO: process.env.GITHUB_REPO || '',
+        GITHUB_BRANCH: process.env.GITHUB_BRANCH || 'main',
+        GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
+        FILE_STORAGE_PATH: process.env.FILE_STORAGE_PATH || 'src/upload/assets/',
+        UPLOAD_PASSWORD: process.env.UPLOAD_PASSWORD || '',
+        MD_GITHUB_USERNAME: process.env.MD_GITHUB_USERNAME || '',
+        MD_GITHUB_REPO: process.env.MD_GITHUB_REPO || '',
+        MD_GITHUB_BRANCH: process.env.MD_GITHUB_BRANCH || 'main',
+        MD_GITHUB_TOKEN: process.env.MD_GITHUB_TOKEN || '',
+        MD_FILE_STORAGE_PATH: process.env.MD_FILE_STORAGE_PATH || 'content/post/',
+        MD_FILE_STORAGE_NAME: process.env.MD_FILE_STORAGE_NAME || '上传文件记录.md'
+      };
+      
+      // 验证从环境变量获取的配置是否有效
+      if (validateConfig()) {
+        console.log('成功从Vercel环境变量获取配置');
+      } else {
+        console.warn('从Vercel环境变量获取的配置不完整，使用默认配置');
+        config = getDefaultConfig();
+      }
+    } else {
+      // 本地环境或无法访问process对象，使用默认空值配置
+      config = getDefaultConfig();
+    }
+  } catch (error) {
+    console.error('获取配置时出错:', error);
     config = getDefaultConfig();
   }
   
