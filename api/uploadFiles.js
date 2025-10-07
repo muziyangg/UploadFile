@@ -1,5 +1,5 @@
 // 上传文件到GitHub的云函数
-import { getConfig, validateConfig } from '../config.js';
+import { getConfig, validateConfig } from './config.js';
 
 // 检查密码是否正确
 function checkPassword(password) {

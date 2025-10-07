@@ -1,5 +1,5 @@
 // 更新MD文件的云函数
-import { getConfig, validateConfig } from '../config.js';
+import { getConfig, validateConfig } from './config.js';
 
 // 获取当前文件的SHA（用于更新文件）
 async function getFileSha(filePath, config) {

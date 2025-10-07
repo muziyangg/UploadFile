@@ -1,7 +1,7 @@
 // 前端主逻辑文件
 import { uploadFiles } from './api/uploadFiles.js';
 import { updateMdFile } from './api/updateMdFile.js';
-import { initConfig } from './config.js';
+import { initConfig } from './api/config.js';
 
 // DOM 元素
 const dropArea = document.getElementById('dropArea');

@@ -22,7 +22,7 @@ export function getEnvironment() {
 export async function readLocalConfig() {
   try {
     // 在浏览器环境中使用fetch API读取文件
-    const response = await fetch('./local-config.json');
+    const response = await fetch('../local-config.json');
     if (response.ok) {
       const localConfig = await response.json();
       return localConfig;
