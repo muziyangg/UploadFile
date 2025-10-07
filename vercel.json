@@ -11,10 +11,7 @@
   ],
   "functions": {
     "api/*.js": {
-      "includeFiles": "**/*",
-      "env": {
-        "NODE_ENV": "production"
-      }
+      "includeFiles": "**/*"
     }
   },
   "env": {
