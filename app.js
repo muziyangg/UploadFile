@@ -443,10 +443,7 @@ function getFileTypeColor(fileType) {
 // 初始化应用
 async function initApp() {
   try {
-    // 异步加载配置
-    await initConfig();
-    
-    // 配置加载成功后初始化其他组件
+    // 直接初始化其他组件，不预先加载配置
     initEventListeners();
     updateFileList();
     updateUploadButtonState();
@@ -454,7 +451,7 @@ async function initApp() {
     console.log('应用初始化成功');
   } catch (error) {
     console.error('应用初始化失败:', error);
-    showStatusMessage('应用初始化失败，请检查配置文件', 'error');
+    showStatusMessage('应用初始化失败', 'error');
   }
 }
 

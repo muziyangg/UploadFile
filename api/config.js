@@ -4,14 +4,17 @@ let config = null;
 // 环境判断函数
 export function getEnvironment() {
   try {
-    // 尝试访问 process 对象
-    if (typeof process !== 'undefined' && process.env && process.env.VERCEL === '1') {
-      // 如果 process.env.VERCEL 存在且值为 '1'，则为 Vercel 环境
-      return 'vercel';
+    // 增强process对象检查逻辑
+    if (typeof process !== 'undefined') {
+      // 确认process存在后，再检查process.env
+      if (process.env && process.env.VERCEL === '1') {
+        // 如果 process.env.VERCEL 存在且值为 '1'，则为 Vercel 环境
+        return 'vercel';
+      }
     }
   } catch (error) {
-    // 访问 process 对象失败，说明在浏览器环境中
-    console.debug('无法访问 process 对象，在浏览器环境中');
+    // 捕获所有可能的错误
+    console.debug('无法访问 process 对象或环境变量，在浏览器环境中:', error.message);
   }
   
   // 默认返回 'local'
@@ -56,14 +59,24 @@ function getDefaultConfig() {
 
 // 获取配置信息（同步版本，用于非异步场景）
 export function getConfig() {
-  if (config) return config;
+  // 安全地获取环境类型，防止getEnvironment函数出错
+  let env = 'local';
+  try {
+    env = getEnvironment();
+  } catch (error) {
+    console.debug('获取环境类型时出错，默认使用local环境:', error.message);
+  }
   
-  const env = getEnvironment();
+  let currentConfig = null;
   
   try {
-    if (env === 'vercel' && typeof process !== 'undefined' && process.env) {
+    // 首先确认process对象是否存在
+    const isProcessAvailable = typeof process !== 'undefined';
+    const isProcessEnvAvailable = isProcessAvailable && process.env;
+    
+    if (env === 'vercel' && isProcessEnvAvailable) {
       // Vercel 环境，从环境变量获取配置
-      config = {
+      currentConfig = {
         GITHUB_USERNAME: process.env.GITHUB_USERNAME || '',
         GITHUB_REPO: process.env.GITHUB_REPO || '',
         GITHUB_BRANCH: process.env.GITHUB_BRANCH || 'main',
@@ -83,30 +96,47 @@ export function getConfig() {
         console.log('成功从Vercel环境变量获取配置');
       } else {
         console.warn('从Vercel环境变量获取的配置不完整，使用默认配置');
-        config = getDefaultConfig();
+        currentConfig = getDefaultConfig();
       }
     } else {
       // 本地环境或无法访问process对象，使用默认空值配置
-      config = getDefaultConfig();
+      currentConfig = getDefaultConfig();
+      if (!isProcessAvailable) {
+        console.debug('process对象不存在，在浏览器环境中使用默认配置');
+      }
     }
   } catch (error) {
     console.error('获取配置时出错:', error);
-    config = getDefaultConfig();
+    // 确保即使出错也有默认配置可用
+    currentConfig = getDefaultConfig();
   }
   
-  return config;
+  // 不缓存配置，每次调用都返回新的配置对象
+  return currentConfig;
 }
 
 // 初始化配置（异步版本）
 export async function initConfig() {
-  const env = getEnvironment();
-  
-  if (env !== 'vercel') {
-    // 本地环境，异步读取local-config.json
-    config = await readLocalConfig();
-  } else {
-    // Vercel环境，使用同步配置
-    config = getConfig();
+  try {
+    // 安全地获取环境类型
+    let env = 'local';
+    try {
+      env = getEnvironment();
+    } catch (error) {
+      console.debug('获取环境类型时出错，默认使用local环境:', error.message);
+    }
+    
+    if (env !== 'vercel') {
+      // 本地环境，异步读取local-config.json
+      config = await readLocalConfig();
+    } else {
+      // Vercel环境，使用同步配置
+      config = getConfig();
+    }
+  } catch (error) {
+    console.error('初始化配置时出错:', error);
+    // 确保即使初始化失败也有默认配置可用
+    config = getDefaultConfig();
   }
   
   return config;
