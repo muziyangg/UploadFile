@@ -15,7 +15,7 @@ export function getEnvironment() {
   }
   
   // 默认返回 'local'
-  return 'local';
+  return 'vercel';
 }
 
 // 从local-config.json文件读取配置
