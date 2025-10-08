@@ -621,14 +621,13 @@ async function getClientInfo() {
     }
     
     // 缓存不存在或已过期或无效，调用API获取新数据
-    // 使用ip-api.com API获取IP和中文地理位置信息
-    // 注意：ip-api.com限制每分钟查询次数，实际部署时可能需要更换其他API
-    const response = await fetch('https://ip-api.com/json/?lang=zh-CN');
+    // 使用ipwho.is API获取IP和中文地理位置信息（免费支持HTTPS）
+    const response = await fetch('https://ipwho.is/?lang=zh-CN');
     if (response.ok) {
       const data = await response.json();
       
       // 确保获取IPv4地址
-      let ipv4Address = data.query || '';
+      let ipv4Address = data.ip || '';
       // 如果是IPv6地址，尝试从本地存储或其他方式获取IPv4地址
       if (ipv4Address.includes(':')) {
         ipv4Address = localStorage.getItem('lastIPv4Address') || 'localhost';
@@ -640,14 +639,17 @@ async function getClientInfo() {
       clientInfo.ip = ipv4Address;
       
       // 格式化位置信息，确保是中文
-      if (data.regionName && data.city) {
-        clientInfo.location = `${data.regionName} ${data.city}`;
-      } else if (data.regionName) {
-        clientInfo.location = data.regionName;
+      // ipwho.is返回的字段结构可能不同
+      if (data.region && data.city) {
+        clientInfo.location = `${data.region} ${data.city}`;
+      } else if (data.region) {
+        clientInfo.location = data.region;
       } else if (data.city) {
         clientInfo.location = data.city;
+      } else if (data.country) {
+        clientInfo.location = data.country;
       } else {
-        clientInfo.location = data.country || '未知位置';
+        clientInfo.location = '未知位置';
       }
       
       // 保存到缓存，包含时间戳
