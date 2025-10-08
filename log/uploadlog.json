@@ -1,362 +1,64 @@
 [
   {
-    "timestamp": "2025-10-08T03:54:23.902Z",
+    "timestamp": "2025-10-08 17:45:03",
     "files": [
       {
-        "name": "test-file-1.txt",
-        "size": 1024,
-        "uploadTime": "2025-10-08T02:54:23.898Z",
-        "uploader": "测试用户1",
-        "downloadUrl": "https://example.com/test-file-1.txt"
-      },
-      {
-        "name": "test-file-2.jpg",
-        "size": 2048000,
-        "uploadTime": "2025-10-08T03:54:23.901Z",
-        "uploader": "测试用户2",
-        "downloadUrl": "https://example.com/test-file-2.jpg"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T03:55:26.349Z",
-    "files": [
-      {
-        "name": "test-file-1.txt",
-        "size": 1024,
-        "uploadTime": "2025-10-08T02:55:26.347Z",
-        "uploader": "测试用户1",
-        "downloadUrl": "https://example.com/test-file-1.txt"
-      },
-      {
-        "name": "test-file-2.jpg",
-        "size": 2048000,
-        "uploadTime": "2025-10-08T03:55:26.349Z",
-        "uploader": "测试用户2",
-        "downloadUrl": "https://example.com/test-file-2.jpg"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T03:56:33.985Z",
-    "files": [
-      {
-        "name": "test-file-1.txt",
-        "size": 1024,
-        "uploadTime": "2025-10-08T02:56:33.980Z",
-        "uploader": "测试用户1",
-        "downloadUrl": "https://example.com/test-file-1.txt"
-      },
-      {
-        "name": "test-file-2.jpg",
-        "size": 2048000,
-        "uploadTime": "2025-10-08T03:56:33.984Z",
-        "uploader": "测试用户2",
-        "downloadUrl": "https://example.com/test-file-2.jpg"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T04:00:24.987Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE取图(DemoM前处理).docx",
-        "path": "src/upload/assets/DHCM00001-AVE取图(DemoM前处理).docx",
-        "size": 23117,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:00:24.013Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T04:02:02.832Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:02:01.912Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T04:18:19.966Z",
-    "files": [
-      {
-        "name": "DHCM00002-西森美康-XN系列.docx",
-        "path": "src/upload/assets/DHCM00002-西森美康-XN系列.docx",
-        "size": 24355,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:18:14.544Z"
-      },
-      {
-        "name": "DHCM00009—西门子1000—串口.docx",
-        "path": "src/upload/assets/DHCM00009—西门子1000—串口.docx",
-        "size": 20463,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:18:16.498Z"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T04:37:28.616Z",
-    "files": [
-      {
-        "name": "DHCM00066-PL12-画图.docx",
-        "path": "src/upload/assets/DHCM00066-PL12-画图.docx",
-        "size": 41959,
-        "uploader": "1234",
-        "uploadTime": "2025-10-08T04:37:27.248Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T04:38:11.309Z",
-    "files": [
-      {
-        "name": "DHCM00066-PL12-画图.docx",
-        "path": "src/upload/assets/DHCM00066-PL12-画图.docx",
-        "size": 41959,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:38:10.260Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T04:50:53.747Z",
-    "files": [
-      {
-        "name": "DHCM00066-PL12-画图_1759899050831.docx",
-        "originalName": "DHCM00066-PL12-画图.docx",
-        "path": "src/upload/assets/DHCM00066-PL12-画图_1759899050831.docx",
-        "size": 41959,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:50:52.528Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T04:55:50.902Z",
-    "files": [
-      {
-        "name": "DHCM00066-PL12-画图_1759899348356.docx",
-        "originalName": "DHCM00066-PL12-画图.docx",
-        "path": "src/upload/assets/DHCM00066-PL12-画图_1759899348356.docx",
-        "size": 41959,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T04:55:49.956Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:05:12.260Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759899907605.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759899907605.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:05:09.188Z"
-      },
-      {
-        "name": "DHCM00001-AVE取图(DemoM前处理)_1759899910111.docx",
-        "originalName": "DHCM00001-AVE取图(DemoM前处理).docx",
-        "path": "src/upload/assets/DHCM00001-AVE取图(DemoM前处理)_1759899910111.docx",
-        "size": 23117,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:05:11.322Z"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T05:12:09.350Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759900321922.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759900321922.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:12:03.276Z"
-      },
-      {
-        "name": "DHCM00001-AVE取图(DemoM前处理)_1759900324206.docx",
-        "originalName": "DHCM00001-AVE取图(DemoM前处理).docx",
-        "path": "src/upload/assets/DHCM00001-AVE取图(DemoM前处理)_1759900324206.docx",
-        "size": 23117,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:12:05.450Z"
-      },
-      {
-        "name": "DHCM00002-西森美康-XN系列_1759900326255.docx",
-        "originalName": "DHCM00002-西森美康-XN系列.docx",
-        "path": "src/upload/assets/DHCM00002-西森美康-XN系列_1759900326255.docx",
-        "size": 24355,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:12:07.594Z"
-      }
-    ],
-    "totalFiles": 3
-  },
-  {
-    "timestamp": "2025-10-08T05:21:36.446Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759900893952.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759900893952.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:21:35.575Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:26:27.693Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759901184527.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759901184527.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:26:25.962Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:31:57.363Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759901514510.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759901514510.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:31:56.133Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:39:44.284Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759901981946.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759901981946.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:39:43.368Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:41:00.875Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759902058348.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759902058348.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:40:59.693Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:44:03.860Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759902241329.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759902241329.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:44:02.672Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T05:55:38.353Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759902935607.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759902935607.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T05:55:37.245Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T07:30:39.774Z",
-    "files": [
-      {
-        "name": "DHCM00001-AVE766尿机_1759908637497.docx",
-        "originalName": "DHCM00001-AVE766尿机.docx",
-        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759908637497.docx",
-        "size": 24718,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T07:30:38.744Z"
-      }
-    ],
-    "totalFiles": 1
-  },
-  {
-    "timestamp": "2025-10-08T08:21:46.054Z",
-    "files": [
-      {
-        "name": "DHCM00132 新产业—Biolumi8000—网口.docx",
-        "originalName": "DHCM00132 新产业—Biolumi8000—网口.docx",
-        "path": "src/upload/assets/DHCM00132 新产业—Biolumi8000—网口.docx",
-        "size": 24908,
-        "uploader": "1234",
-        "uploadTime": "2025-10-08T08:21:41.870Z"
-      },
-      {
-        "name": "DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
-        "originalName": "DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
-        "path": "src/upload/assets/DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
-        "size": 261166,
-        "uploader": "1234",
-        "uploadTime": "2025-10-08T08:21:44.894Z"
-      }
-    ],
-    "totalFiles": 2
-  },
-  {
-    "timestamp": "2025-10-08T08:26:59.205Z",
-    "files": [
-      {
-        "name": "DHCM00132 Biolumi8000联网接口说明.pdf",
+        "name": "DHCM00132 Biolumi8000联网接口说明_1759916700417.pdf",
         "originalName": "DHCM00132 Biolumi8000联网接口说明.pdf",
-        "path": "src/upload/assets/DHCM00132 Biolumi8000联网接口说明.pdf",
+        "path": "src/upload/assets/DHCM00132 Biolumi8000联网接口说明_1759916700417.pdf",
         "size": 165448,
-        "uploader": "123",
-        "uploadTime": "2025-10-08T08:26:58.136Z"
+        "uploader": "1234",
+        "ipAddress": "104.28.240.139",
+        "location": "上海市 上海",
+        "uploadTime": "2025-10-08 17:45:02"
       }
     ],
-    "totalFiles": 1
+    "totalFiles": 1,
+    "requestInfo": {
+      "timestamp": "2025-10-08T09:45:03.539Z",
+      "fileCount": 1
+    }
+  },
+  {
+    "timestamp": "2025-10-08 17:58:25",
+    "files": [
+      {
+        "name": "DHCM00132 Biolumi8000联网接口说明_1759917502491.pdf",
+        "originalName": "DHCM00132 Biolumi8000联网接口说明.pdf",
+        "path": "src/upload/assets/DHCM00132 Biolumi8000联网接口说明_1759917502491.pdf",
+        "size": 165448,
+        "downloadUrl": "https://hugoupload.717170.xyz/src/upload/assets/DHCM00132 Biolumi8000联网接口说明_1759917502491.pdf",
+        "uploader": "123",
+        "ipAddress": "104.28.240.139",
+        "location": "上海市 上海",
+        "uploadTime": "2025-10-08 17:58:24"
+      }
+    ],
+    "totalFiles": 1,
+    "requestInfo": {
+      "timestamp": "2025-10-08T09:58:25.544Z",
+      "fileCount": 1
+    }
+  },
+  {
+    "timestamp": "2025-10-08 18:05:08",
+    "files": [
+      {
+        "name": "DHCM00132 Biolumi8000联网接口说明_1759917905421.pdf",
+        "originalName": "DHCM00132 Biolumi8000联网接口说明.pdf",
+        "path": "src/upload/assets/DHCM00132 Biolumi8000联网接口说明_1759917905421.pdf",
+        "size": 165448,
+        "downloadUrl": "https://hugoupload.717170.xyz/src/upload/assets/DHCM00132%20Biolumi8000联网接口说明_1759917905421.pdf",
+        "uploader": "123",
+        "ipAddress": "104.28.240.139",
+        "location": "上海市 上海",
+        "uploadTime": "2025-10-08 18:05:07"
+      }
+    ],
+    "totalFiles": 1,
+    "requestInfo": {
+      "timestamp": "2025-10-08T10:05:08.148Z",
+      "fileCount": 1
+    }
   }
 ]

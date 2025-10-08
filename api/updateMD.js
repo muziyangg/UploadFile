@@ -350,9 +350,10 @@ function generateMDContent(existingContent, uploadedFiles) {
     const fileDateTime = `${fileDate} ${fileTime}`;
     const fileSize = formatFileSize(file.size);
     const downloadLink = `[${file.name}](${file.downloadUrl})`;
+    const uploadLocation = file.location || '-';
 
     // 根据配置的表头格式生成行
-    return `| ${file.name} | ${fileDateTime} | ${fileSize} | ${file.uploader} | ${downloadLink} |`;
+    return `| ${file.name} | ${fileDateTime} | ${fileSize} | ${file.uploader} | ${uploadLocation} | ${downloadLink} |`;
   });
 
   // 合并所有行并去重
@@ -393,9 +394,9 @@ function generateMDContent(existingContent, uploadedFiles) {
       }
     }
     
-    // 转换文件中的上传时间格式
+    // 转换文件中的上传时间格式，并保留所有原始参数
     const filesWithFormattedTime = uploadedFiles.map(file => ({
-      ...file,
+      ...file, // 保留所有原始参数
       uploadTime: file.uploadTime ? new Date(file.uploadTime).toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
@@ -412,7 +413,12 @@ function generateMDContent(existingContent, uploadedFiles) {
     logs.push({
       timestamp: nowFormatted, // 使用格式化的本地时间
       files: filesWithFormattedTime,
-      totalFiles: uploadedFiles.length
+      totalFiles: uploadedFiles.length,
+      requestInfo: {
+        // 记录请求的一些基本信息
+        timestamp: nowISO,
+        fileCount: uploadedFiles.length
+      }
     });
     
     // 写入日志（异步）

@@ -1,4 +1,7 @@
+// 引入必要的模块
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
 
 module.exports = async (req, res) => {
   // 只允许POST请求
@@ -33,6 +36,18 @@ module.exports = async (req, res) => {
     if (!GITHUB_TOKEN) {
       console.error('错误: GitHub Token未设置');
       return res.status(500).json({ success: false, message: '服务器配置不完整: GitHub Token未设置' });
+    }
+
+    // 读取config.json获取rootweb配置
+    let config = { rootweb: 'https://hugoupload.717170.xyz' };
+    try {
+      const configPath = path.join(__dirname, 'config.json');
+      if (fs.existsSync(configPath)) {
+        const configData = fs.readFileSync(configPath, 'utf8');
+        config = JSON.parse(configData);
+      }
+    } catch (error) {
+      console.error('读取配置文件失败:', error);
     }
 
     // 4. 循环上传文件（优化版本）
@@ -102,12 +117,24 @@ module.exports = async (req, res) => {
         const response = await axios.put(url, uploadData, { headers });
         console.log(`文件 ${file.name} 上传成功，SHA: ${response.data.sha}`);
 
+        // 生成自定义的downloadUrl - 使用rootweb + FILE_STORAGE_PATH + 文件名
+        const rootweb = config.rootweb || 'https://hugoupload.717170.xyz';
+        // 确保FILE_STORAGE_PATH不以/开头，避免重复的斜杠
+        const normalizedStoragePath = FILE_STORAGE_PATH.startsWith('/') ? FILE_STORAGE_PATH.substring(1) : FILE_STORAGE_PATH;
+        // 确保rootweb以/结尾，避免路径拼接问题
+        const normalizedRootweb = rootweb.endsWith('/') ? rootweb : `${rootweb}/`;
+        // 编码文件名中的空格为%20
+        const encodedFileName = targetFileName.replace(/\s+/g, '%20');
+        // 构建自定义downloadUrl
+        const customDownloadUrl = `${normalizedRootweb}${normalizedStoragePath}${encodedFileName}`;
+
         uploadedFiles.push({
           name: targetFileName,
           originalName: file.name,
           path: filePath,
           size: file.size,
-          downloadUrl: response.data.download_url,
+          downloadUrl: customDownloadUrl, // 使用自定义的downloadUrl
+          githubDownloadUrl: response.data.download_url, // 保留原始的GitHub下载链接
           sha: response.data.sha,
           uploader: uploader,
           ipAddress: ipAddress,
