@@ -1,0 +1,12 @@
+{
+  "allowedFileTypes": [
+    ".docx",
+    ".doc",
+    ".pdf",
+    ".txt",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif"
+  ]
+}

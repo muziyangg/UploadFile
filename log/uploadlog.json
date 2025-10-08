@@ -308,5 +308,55 @@
       }
     ],
     "totalFiles": 1
+  },
+  {
+    "timestamp": "2025-10-08T07:30:39.774Z",
+    "files": [
+      {
+        "name": "DHCM00001-AVE766尿机_1759908637497.docx",
+        "originalName": "DHCM00001-AVE766尿机.docx",
+        "path": "src/upload/assets/DHCM00001-AVE766尿机_1759908637497.docx",
+        "size": 24718,
+        "uploader": "123",
+        "uploadTime": "2025-10-08T07:30:38.744Z"
+      }
+    ],
+    "totalFiles": 1
+  },
+  {
+    "timestamp": "2025-10-08T08:21:46.054Z",
+    "files": [
+      {
+        "name": "DHCM00132 新产业—Biolumi8000—网口.docx",
+        "originalName": "DHCM00132 新产业—Biolumi8000—网口.docx",
+        "path": "src/upload/assets/DHCM00132 新产业—Biolumi8000—网口.docx",
+        "size": 24908,
+        "uploader": "1234",
+        "uploadTime": "2025-10-08T08:21:41.870Z"
+      },
+      {
+        "name": "DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
+        "originalName": "DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
+        "path": "src/upload/assets/DHCM00136-日本东芝TBA-40FR生化仪器接口文档.doc",
+        "size": 261166,
+        "uploader": "1234",
+        "uploadTime": "2025-10-08T08:21:44.894Z"
+      }
+    ],
+    "totalFiles": 2
+  },
+  {
+    "timestamp": "2025-10-08T08:26:59.205Z",
+    "files": [
+      {
+        "name": "DHCM00132 Biolumi8000联网接口说明.pdf",
+        "originalName": "DHCM00132 Biolumi8000联网接口说明.pdf",
+        "path": "src/upload/assets/DHCM00132 Biolumi8000联网接口说明.pdf",
+        "size": 165448,
+        "uploader": "123",
+        "uploadTime": "2025-10-08T08:26:58.136Z"
+      }
+    ],
+    "totalFiles": 1
   }
 ]

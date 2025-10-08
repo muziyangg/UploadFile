@@ -147,29 +147,15 @@ module.exports = async (req, res) => {
     // 6. 调用updateMD.js来更新MD文件
     if (uploadedFiles.length > 0) {
       try {
-        // 直接调用updateMD模块，一次性传递所有上传成功的文件
-        const updateMDModule = require('./updateMD');
+        // 直接调用updateMD模块中的核心功能函数
+        const updateMD = require('./updateMD');
         
-        // 准备参数
-        const mockReq = {
-          method: 'POST',
-          body: JSON.stringify({ uploadedFiles })
-        };
+        // 直接传递上传文件数据，不需要创建模拟的HTTP请求对象
+        const result = await updateMD.updateFileRecords(uploadedFiles);
         
-        // 创建一个简单的响应对象
-        const mockRes = {
-          status: function(code) {
-            this.statusCode = code;
-            return this;
-          },
-          json: function(data) {
-            console.log('MD文件更新结果:', data);
-            return data;
-          }
-        };
-        
-        // 调用updateMD函数
-        await updateMDModule(mockReq, mockRes);
+        console.log('MD文件更新内容:', uploadedFiles);
+
+        console.log('MD文件更新结果:', result);
         
       } catch (error) {
         console.error('更新MD文件失败:', error);

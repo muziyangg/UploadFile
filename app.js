@@ -9,6 +9,26 @@ createApp({
     const isUploading = ref(false);
     const statusMessage = ref('');
     const statusType = ref(''); // success, error, info
+    // 直接设置默认的允许文件类型列表
+    const allowedFileTypes = ref(['.docx', '.doc', '.pdf', '.txt', '.jpg', '.jpeg', '.png', '.gif']);
+    
+    // 加载配置文件（可选）
+    const loadConfig = async () => {
+      try {
+        // 尝试从配置文件加载
+        const response = await fetch('/app-config.json');
+        const config = await response.json();
+        if (config.allowedFileTypes && Array.isArray(config.allowedFileTypes)) {
+          allowedFileTypes.value = config.allowedFileTypes;
+        }
+      } catch (error) {
+        console.log('使用默认文件类型配置');
+        // 已经有默认值，不需要额外设置
+      }
+    };
+    
+    // 页面加载时加载配置
+    loadConfig();
     
     // 初始化拖放区域
     const initDropArea = () => {
@@ -68,35 +88,163 @@ createApp({
     const handleFiles = (filesList) => {
       if (filesList.length === 0) return;
 
+      const invalidFiles = [];
+      const validFiles = [];
+      
       Array.from(filesList).forEach(file => {
-        // 检查文件是否已经在列表中
-        const isDuplicate = files.value.some(f => f.name === file.name && f.size === file.size);
-        if (!isDuplicate) {
-          files.value.push({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            file: file,
-            status: 'waiting' // waiting, uploading, success, error
-          });
+        // 获取文件扩展名（小写）
+        const extension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        // 检查文件类型是否允许
+        const isAllowedType = allowedFileTypes.value.some(type => 
+          type.toLowerCase() === extension
+        );
+        
+        if (!isAllowedType) {
+          invalidFiles.push(file.name);
+        } else {
+          // 检查文件是否已经在列表中
+          const isDuplicate = files.value.some(f => f.name === file.name && f.size === file.size);
+          if (!isDuplicate) {
+            validFiles.push({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              file: file,
+              status: 'waiting' // waiting, uploading, success, error
+            });
+          }
         }
       });
+      
+      // 添加有效文件
+      if (validFiles.length > 0) {
+        files.value.push(...validFiles);
+        updateFileList();
+        checkUploadButton();
+      }
+      
+      // 显示无效文件提示
+      if (invalidFiles.length > 0) {
+        const allowedTypesText = allowedFileTypes.value.join('、');
+        showMessage(
+          `以下文件类型不允许上传: ${invalidFiles.join('、')}。\n允许的文件类型: ${allowedTypesText}`,
+          'error'
+        );
+      }
+    };
 
-      updateFileList();
-      checkUploadButton();
+    // 获取文件扩展名对应的图标类名
+    const getFileIconClass = (fileName, status) => {
+      // 确保fileName有效
+      if (!fileName || typeof fileName !== 'string') {
+        return 'fa fa-file-o mr-3 text-gray-500';
+      }
+      
+      // 获取文件扩展名（转换为小写）
+      const parts = fileName.split('.');
+      // 如果文件名没有扩展名，返回默认图标
+      if (parts.length <= 1) {
+        return 'fa fa-file-o mr-3 text-gray-500';
+      }
+      
+      const extension = parts.pop().toLowerCase();
+      
+      // 根据文件状态返回不同颜色
+      const statusClass = status === 'success' ? 'text-green-500' : 
+                         status === 'error' ? 'text-red-500' : 
+                         status === 'uploading' ? 'text-blue-500' : 'text-gray-500';
+      
+      // 根据文件扩展名返回不同图标
+      // 确保每个类名都以fa开头
+      switch (extension) {
+        // 文档类型
+        case 'doc':
+        case 'docx':
+          return `fa fa-file-word-o mr-3 ${statusClass}`;
+        case 'pdf':
+          return `fa fa-file-pdf-o mr-3 ${statusClass}`;
+        case 'txt':
+          return `fa fa-file-text-o mr-3 ${statusClass}`;
+        case 'xls':
+        case 'xlsx':
+          return `fa fa-file-excel-o mr-3 ${statusClass}`;
+        case 'ppt':
+        case 'pptx':
+          return `fa fa-file-powerpoint-o mr-3 ${statusClass}`;
+        
+        // 图片类型
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+        case 'gif':
+        case 'bmp':
+        case 'tiff':
+          return `fa fa-file-image-o mr-3 ${statusClass}`;
+        
+        // 音频类型
+        case 'mp3':
+        case 'wav':
+        case 'ogg':
+        case 'flac':
+          return `fa fa-file-audio-o mr-3 ${statusClass}`;
+        
+        // 视频类型
+        case 'mp4':
+        case 'avi':
+        case 'mov':
+        case 'wmv':
+          return `fa fa-file-video-o mr-3 ${statusClass}`;
+        
+        // 压缩文件
+        case 'zip':
+        case 'rar':
+        case '7z':
+        case 'tar':
+        case 'gz':
+          return `fa fa-file-archive-o mr-3 ${statusClass}`;
+        
+        // 代码文件
+        case 'js':
+        case 'html':
+        case 'css':
+        case 'php':
+        case 'py':
+        case 'java':
+        case 'cpp':
+        case 'c':
+          return `fa fa-file-code-o mr-3 ${statusClass}`;
+        
+        // 默认文件类型
+        default:
+          return `fa fa-file-o mr-3 ${statusClass}`;
+      }
     };
 
     // 更新文件列表显示
     const updateFileList = () => {
-      const fileList = document.getElementById('fileList');
-      const filesContainer = document.getElementById('filesContainer');
-      const fileCount = document.getElementById('fileCount');
-      const emptyMessage = document.getElementById('emptyMessage');
-
       if (files.value.length > 0) {
         fileList.classList.remove('hidden');
         emptyMessage.classList.add('hidden');
-        fileCount.textContent = files.value.length;
+        
+        // 获取标题元素
+        const fileListHeader = document.getElementById('fileListHeader');
+        
+        // 设置标题内容并移除之前可能存在的清空按钮
+        fileListHeader.innerHTML = '<span>待上传文件 (<span id="fileCount">' + files.value.length + '</span>)</span>';
+        
+        // 创建清空按钮
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'ml-auto text-red-500 text-sm flex items-center';
+        clearBtn.innerHTML = '<i class="fa fa-trash mr-1"></i>清空全部';
+        clearBtn.onclick = clearAllFiles;
+        
+        // 设置header为flex布局
+        fileListHeader.style.display = 'flex';
+        fileListHeader.style.alignItems = 'center';
+        
+        // 将按钮添加到header元素
+        fileListHeader.appendChild(clearBtn);
         
         // 清空容器
         filesContainer.innerHTML = '';
@@ -113,9 +261,9 @@ createApp({
           const fileInfo = document.createElement('div');
           fileInfo.className = 'flex items-center';
           
-          // 文件图标
+          // 文件图标 - 使用根据文件类型的图标
           const fileIcon = document.createElement('i');
-          fileIcon.className = `fa mr-3 ${file.status === 'success' ? 'fa-check-circle text-green-500' : file.status === 'error' ? 'fa-exclamation-circle text-red-500' : file.status === 'uploading' ? 'fa-file-o text-blue-500' : 'fa-file-o text-gray-500'}`;
+          fileIcon.className = getFileIconClass(file.name, file.status);
           
           // 文件详情
           const fileDetails = document.createElement('div');
@@ -216,6 +364,18 @@ createApp({
           checkUploadButton(); // 更新上传按钮状态
         }, 3000);
       }
+    };
+
+    // 清空所有文件
+    const clearAllFiles = () => {
+      // 清空文件数组
+      files.value = [];
+      // 更新文件列表显示（会自动隐藏文件列表）
+      updateFileList();
+      // 更新上传按钮状态
+      checkUploadButton();
+      // 显示成功消息
+      showMessage('所有文件已清空', 'success');
     };
 
     // 上传所有文件
@@ -378,6 +538,23 @@ createApp({
       document.getElementById('uploadPassword').addEventListener('input', () => {
         uploadPassword.value = document.getElementById('uploadPassword').value;
         checkUploadButton();
+      });
+      
+      // 添加密码可见性切换功能
+      document.getElementById('togglePasswordBtn').addEventListener('click', () => {
+        const passwordInput = document.getElementById('uploadPassword');
+        const passwordIcon = document.getElementById('togglePasswordBtn').querySelector('i');
+        
+        // 切换密码可见性
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          passwordIcon.classList.remove('fa-eye-slash');
+          passwordIcon.classList.add('fa-eye');
+        } else {
+          passwordInput.type = 'password';
+          passwordIcon.classList.remove('fa-eye');
+          passwordIcon.classList.add('fa-eye-slash');
+        }
       });
       
       document.getElementById('uploader').addEventListener('input', () => {
