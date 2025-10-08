@@ -597,23 +597,33 @@ async function getClientInfo() {
     // 检查缓存中是否有有效的IP信息（12小时内）
     const cachedInfo = localStorage.getItem('cachedClientInfo');
     if (cachedInfo) {
-      const { ip, location, timestamp } = JSON.parse(cachedInfo);
-      const now = Date.now();
-      const twelveHoursInMs = 12 * 60 * 60 * 1000;
-      
-      // 如果缓存未过期（12小时内），直接使用缓存数据
-      if (now - timestamp < twelveHoursInMs) {
-        clientInfo.ip = ip;
-        clientInfo.location = location;
-        console.log('使用缓存的客户端信息');
-        return;
+      try {
+        // 添加额外的验证，确保cachedInfo是有效的JSON
+        const parsedInfo = JSON.parse(cachedInfo);
+        // 检查解析后的数据是否包含必要的字段
+        if (parsedInfo && parsedInfo.ip && parsedInfo.location && parsedInfo.timestamp) {
+          const now = Date.now();
+          const twelveHoursInMs = 12 * 60 * 60 * 1000;
+          
+          // 如果缓存未过期（12小时内），直接使用缓存数据
+          if (now - parsedInfo.timestamp < twelveHoursInMs) {
+            clientInfo.ip = parsedInfo.ip;
+            clientInfo.location = parsedInfo.location;
+            console.log('使用缓存的客户端信息');
+            return;
+          }
+        }
+      } catch (jsonError) {
+        console.warn('缓存数据解析失败，将重新获取:', jsonError);
+        // 清理无效的缓存数据
+        localStorage.removeItem('cachedClientInfo');
       }
     }
     
-    // 缓存不存在或已过期，调用API获取新数据
+    // 缓存不存在或已过期或无效，调用API获取新数据
     // 使用ip-api.com API获取IP和中文地理位置信息
     // 注意：ip-api.com限制每分钟查询次数，实际部署时可能需要更换其他API
-    const response = await fetch('http://ip-api.com/json/?lang=zh-CN');
+    const response = await fetch('https://ip-api.com/json/?lang=zh-CN');
     if (response.ok) {
       const data = await response.json();
       
