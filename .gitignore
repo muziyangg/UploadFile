@@ -1,30 +1,49 @@
-# 忽略本地配置文件
-local-config.json
-
-# 忽略node_modules文件夹
+# Dependencies
 node_modules/
 
-# 忽略环境变量文件
+# Environment variables
 .env
 .env.local
+.env.example
 .env.development.local
 .env.test.local
 .env.production.local
 
-# 忽略日志文件
-*.log
+# Build files
+build/
+dist/
 
-# 忽略临时文件
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Vercel
+.vercel/
+
+# Testing
+coverage/
+*.lcov
+
+# Temporary files
 *.tmp
 *.temp
-
-# 忽略编辑器配置文件
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# 忽略操作系统文件
-.DS_Store
-Thumbs.db
+.vercel
+tmp/

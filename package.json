@@ -1,0 +1,19 @@
+{
+  "name": "github-uploader",
+  "version": "1.0.0",
+  "description": "文件上传到GitHub仓库的工具",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "build": "echo 'Build complete'"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.1.0",
+    "axios": "^1.6.8",
+    "vm2": "^3.9.19"
+  },
+  "devDependencies": {
+    "vercel": "^48.2.6"
+  }
+}

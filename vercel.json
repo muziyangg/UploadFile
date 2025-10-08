@@ -1,20 +1,31 @@
 {
-  "buildCommand": "echo 'No build required'",
-  "outputDirectory": ".",
-  "devCommand": "echo 'Starting development server'",
-  "framework": null,
-  "redirects": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/",
-      "destination": "/index.html"
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "app.js",
+      "use": "@vercel/static"
     }
   ],
-  "functions": {
-    "api/*.js": {
-      "includeFiles": "**/*"
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "^(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2|woff|ttf|eot))$",
+      "dest": "$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
-  },
-  "env": {
-    "NODE_VERCEL": "1"
-  }
+  ]
 }

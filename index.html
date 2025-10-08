@@ -30,23 +30,10 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
-        .progress-container {
-            height: 4px;
-            background-color: #eee;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .progress-bar {
-            height: 100%;
-            background-color: #4CAF50;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-3xl">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-3xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-800">文件上传器</h1>
             <p class="text-gray-600 mt-2">上传文件到GitHub仓库</p>
@@ -73,10 +60,10 @@
         <div id="dropArea" class="dropArea bg-white p-8 rounded-lg shadow text-center mb-6">
             <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
             <p class="text-gray-600 mb-4">拖放文件到这里，或者</p>
-            <label class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition cursor-pointer">
+            <button id="selectFileBtn" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition cursor-pointer">
                 <i class="fa fa-file-o mr-2"></i>选择文件
-                <input type="file" id="fileInput" multiple class="hidden" />
-            </label>
+            </button>
+            <input type="file" id="fileInput" multiple class="hidden" />
             <p id="emptyMessage" class="mt-4 text-gray-500">暂无文件</p>
         </div>
 
