@@ -393,10 +393,25 @@ function generateMDContent(existingContent, uploadedFiles) {
       }
     }
     
+    // 转换文件中的上传时间格式
+    const filesWithFormattedTime = uploadedFiles.map(file => ({
+      ...file,
+      uploadTime: file.uploadTime ? new Date(file.uploadTime).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Shanghai'
+      }).replace(/\//g, '-') : ''
+    }));
+    
     // 添加新的日志记录
     logs.push({
-      timestamp: nowISO,
-      files: uploadedFiles,
+      timestamp: nowFormatted, // 使用格式化的本地时间
+      files: filesWithFormattedTime,
       totalFiles: uploadedFiles.length
     });
     

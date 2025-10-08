@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   try {
     // 解析请求体（处理vercel环境中req.body可能已经是对象的情况）
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { files, password, uploader } = body;
+    const { files, password, uploader, ipAddress, location } = body;
 
     // 1. 检查密码
     const UPLOAD_PASSWORD = process.env.UPLOAD_PASSWORD || '1'; // 默认密码为1
@@ -110,6 +110,8 @@ module.exports = async (req, res) => {
           downloadUrl: response.data.download_url,
           sha: response.data.sha,
           uploader: uploader,
+          ipAddress: ipAddress,
+          location: location,
           uploadTime: new Date().toISOString()
         });
       } catch (error) {

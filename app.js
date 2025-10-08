@@ -421,7 +421,9 @@ createApp({
             body: JSON.stringify({
               files: filesData,
               password: uploadPassword.value,
-              uploader: uploader.value
+              uploader: uploader.value,
+              ipAddress: clientInfo.ip,
+              location: clientInfo.location
             })
           });
 
@@ -582,3 +584,88 @@ createApp({
     };
   }
 }).mount('#app');
+
+// 全局变量存储客户端IP和位置信息
+let clientInfo = {
+  ip: '',
+  location: ''
+};
+
+// 在页面加载时获取客户端IP和位置
+async function getClientInfo() {
+  try {
+    // 检查缓存中是否有有效的IP信息（12小时内）
+    const cachedInfo = localStorage.getItem('cachedClientInfo');
+    if (cachedInfo) {
+      const { ip, location, timestamp } = JSON.parse(cachedInfo);
+      const now = Date.now();
+      const twelveHoursInMs = 12 * 60 * 60 * 1000;
+      
+      // 如果缓存未过期（12小时内），直接使用缓存数据
+      if (now - timestamp < twelveHoursInMs) {
+        clientInfo.ip = ip;
+        clientInfo.location = location;
+        console.log('使用缓存的客户端信息');
+        return;
+      }
+    }
+    
+    // 缓存不存在或已过期，调用API获取新数据
+    // 使用ip-api.com API获取IP和中文地理位置信息
+    // 注意：ip-api.com限制每分钟查询次数，实际部署时可能需要更换其他API
+    const response = await fetch('http://ip-api.com/json/?lang=zh-CN');
+    if (response.ok) {
+      const data = await response.json();
+      
+      // 确保获取IPv4地址
+      let ipv4Address = data.query || '';
+      // 如果是IPv6地址，尝试从本地存储或其他方式获取IPv4地址
+      if (ipv4Address.includes(':')) {
+        ipv4Address = localStorage.getItem('lastIPv4Address') || 'localhost';
+      } else {
+        // 保存IPv4地址到本地存储
+        localStorage.setItem('lastIPv4Address', ipv4Address);
+      }
+      
+      clientInfo.ip = ipv4Address;
+      
+      // 格式化位置信息，确保是中文
+      if (data.regionName && data.city) {
+        clientInfo.location = `${data.regionName} ${data.city}`;
+      } else if (data.regionName) {
+        clientInfo.location = data.regionName;
+      } else if (data.city) {
+        clientInfo.location = data.city;
+      } else {
+        clientInfo.location = data.country || '未知位置';
+      }
+      
+      // 保存到缓存，包含时间戳
+      const cacheData = {
+        ip: clientInfo.ip,
+        location: clientInfo.location,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('cachedClientInfo', JSON.stringify(cacheData));
+      console.log('获取并缓存新的客户端信息');
+    } else {
+      console.warn('获取IP信息失败，使用默认值');
+      // 使用默认值
+      clientInfo.ip = 'localhost';
+      clientInfo.location = '本地环境';
+    }
+  } catch (error) {
+    console.error('获取客户端信息时出错:', error);
+    // 错误情况下使用默认值
+    clientInfo.ip = 'localhost';
+    clientInfo.location = '本地环境';
+  }
+}
+
+// 页面加载时执行
+window.addEventListener('DOMContentLoaded', async () => {
+  // 加载客户端信息
+  await getClientInfo();
+  
+  // 其他初始化代码...
+});
