@@ -2,110 +2,6 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-// 生成MD文件内容
-function generateMDContent(existingContent, uploadedFiles) {
-  const now = new Date();
-  const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const formattedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-  // 提取表格的最后一行数据，如果存在
-  const tableRegex = /\|\s*序号\s*\|\s*文件名\s*\|\s*文件大小\s*\|\s*上传时间\s*\|\s*文件类型\s*\|/;
-  let existingMeta = '';
-  let tableContent = '';
-  let lastIndex = 0;
-
-  // 如果现有内容包含表格，提取表格前的内容
-  if (existingContent) {
-    const tableMatch = existingContent.match(tableRegex);
-    if (tableMatch) {
-      existingMeta = existingContent.substring(0, tableMatch.index);
-      // 查找表格结束位置
-      const lines = existingContent.substring(tableMatch.index).split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        if (!lines[i].startsWith('|') && lines[i].trim() !== '') {
-          tableContent = existingContent.substring(tableMatch.index, tableMatch.index + lines.slice(0, i).join('\n').length);
-          break;
-        }
-      }
-      // 如果没有找到表格结束，使用整个表格
-      if (tableContent === '') {
-        tableContent = existingContent.substring(tableMatch.index);
-      }
-    } else {
-      // 如果没有表格，添加表格标题和表头
-      existingMeta = existingContent.trim() + '\n\n';
-      tableContent = `| 序号 | 文件名 | 文件大小 | 上传时间 | 文件类型 |\n| ---- | ------ | -------- | -------- | -------- |`;
-    }
-  } else {
-    // 如果是新文件，创建表格标题和表头
-    existingMeta = '# 文件上传记录\n\n' +
-                   '本文件记录了所有上传的文件信息，包含文件名、大小、上传时间等。\n\n';
-    tableContent = `| 序号 | 文件名 | 文件大小 | 上传时间 | 文件类型 |\n| ---- | ------ | -------- | -------- | -------- |`;
-  }
-
-  // 提取表格中的数据行，找出最大的序号
-  const dataLines = tableContent.match(/\|\s*\d+\s*\|.*?\|/g) || [];
-  let maxIndex = 0;
-  if (dataLines.length > 0) {
-    dataLines.forEach(line => {
-      const parts = line.split('|').map(part => part.trim());
-      const index = parseInt(parts[1]);
-      if (!isNaN(index) && index > maxIndex) {
-        maxIndex = index;
-      }
-    });
-  }
-
-  // 为每个上传的文件添加一行
-  uploadedFiles.forEach((file, index) => {
-    const fileIndex = maxIndex + index + 1;
-    const fileName = file.name || '未知文件名';
-    const fileSize = formatFileSize(file.size || 0);
-    const uploadTime = `${formattedDate} ${formattedTime}`;
-    const fileType = file.type || 'unknown';
-    
-    tableContent += `\n| ${fileIndex} | ${fileName} | ${fileSize} | ${uploadTime} | ${fileType} |`;
-  });
-
-  // 记录上传日志
-  const logPath = path.join(__dirname, '../../public/upload_logs.json');
-  try {
-    let logs = [];
-    if (fs.existsSync(logPath)) {
-      const logData = fs.readFileSync(logPath, 'utf8');
-      if (logData.trim()) {
-        logs = JSON.parse(logData);
-      }
-    }
-
-    const newLogs = uploadedFiles.map(file => ({
-      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      fileName: file.name || '未知文件名',
-      fileSize: file.size || 0,
-      fileType: file.type || 'unknown',
-      uploadTime: new Date().toISOString(),
-      timestamp: Date.now()
-    }));
-
-    logs = [...logs, ...newLogs];
-    
-    // 只保留最近1000条日志
-    if (logs.length > 1000) {
-      logs = logs.slice(-1000);
-    }
-
-    fs.writeFile(logPath, JSON.stringify(logs, null, 2), (err) => {
-      if (err) {
-        console.error('写入上传日志失败:', err);
-      }
-    });
-  } catch (error) {
-    console.error('记录上传日志时出错:', error);
-  }
-
-  return existingMeta + tableContent;
-}
-
 // 格式化文件大小
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
@@ -123,6 +19,18 @@ exports.updateFileRecords = async (uploadedFiles) => {
     // 验证上传文件数据
     if (!uploadedFiles || !Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
       throw new Error('没有上传的文件数据');
+    }
+
+    // 读取配置文件
+    let config = { tabletitle: '| 文件名 | 上传时间 | 文件大小 | 上传人 | 下载链接 |', iscopy: false };
+    try {
+      const configPath = path.join(__dirname, 'config.json');
+      if (fs.existsSync(configPath)) {
+        const configData = fs.readFileSync(configPath, 'utf8');
+        config = JSON.parse(configData);
+      }
+    } catch (error) {
+      console.error('读取配置文件失败:', error);
     }
 
     // 获取GitHub配置并验证
@@ -195,10 +103,26 @@ exports.updateFileRecords = async (uploadedFiles) => {
     const response = await axios.put(url, uploadData, { headers });
     console.log(`MD文件 ${MD_FILE_STORAGE_NAME} 上传成功，SHA: ${response.data.sha}`);
 
+    // 检查是否需要复制文档
+    let copyResult = null;
+    if (config.iscopy === true) {
+      console.log('检测到iscopy为true，开始复制MD文件到备用仓库');
+      try {
+        copyResult = await copyMDToSecondaryRepo(newContent, uploadedFiles);
+      } catch (copyError) {
+        console.error('复制MD文件到备用仓库失败，但主仓库更新成功:', copyError.message);
+        copyResult = {
+          success: false,
+          message: `MD文件复制失败: ${copyError.message}`
+        };
+      }
+    }
+
     return {
       success: true,
       message: 'MD文件更新成功',
-      data: response.data
+      data: response.data,
+      copyResult: copyResult
     };
 
   } catch (error) {
@@ -218,6 +142,102 @@ exports.updateFileRecords = async (uploadedFiles) => {
     throw error;
   }
 };
+
+// 复制文档到备用仓库
+async function copyMDToSecondaryRepo(content, uploadedFiles) {
+  try {
+    // 从环境变量获取复制目标的GitHub配置
+    const COPY_MD_GITHUB_USERNAME = process.env.COPY_MD_GITHUB_USERNAME || '';
+    const COPY_MD_GITHUB_REPO = process.env.COPY_MD_GITHUB_REPO || '';
+    const COPY_MD_GITHUB_BRANCH = process.env.COPY_MD_GITHUB_BRANCH || 'main';
+    const COPY_MD_GITHUB_TOKEN = process.env.COPY_MD_GITHUB_TOKEN || '';
+    const COPY_MD_FILE_STORAGE_PATH = process.env.COPY_MD_FILE_STORAGE_PATH || 'content/post/other';
+    const COPY_MD_FILE_STORAGE_NAME = process.env.MD_FILE_STORAGE_NAME || '上传文件记录.md';
+    
+    // 验证必要配置
+    if (!COPY_MD_GITHUB_USERNAME || !COPY_MD_GITHUB_REPO || !COPY_MD_GITHUB_TOKEN) {
+      console.error('错误: 备用仓库配置不完整');
+      throw new Error('备用仓库配置不完整: GitHub用户名、仓库名或Token未设置');
+    }
+
+    // 构建GitHub API URL
+    const filePath = COPY_MD_FILE_STORAGE_PATH + COPY_MD_FILE_STORAGE_NAME;
+    const url = `https://api.github.com/repos/${COPY_MD_GITHUB_USERNAME}/${COPY_MD_GITHUB_REPO}/contents/${filePath}`;
+    
+    // 准备请求头
+    const headers = {
+      'Authorization': `token ${COPY_MD_GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'Vercel Cloud Function'
+    };
+
+    // 检查文件是否已存在
+    let existingContent = '';
+    let sha = '';
+    try {
+      console.log(`检查备用仓库中MD文件 ${COPY_MD_FILE_STORAGE_NAME} 是否存在...`);
+      const checkResponse = await axios.get(url, { headers });
+      existingContent = Buffer.from(checkResponse.data.content, 'base64').toString('utf-8');
+      sha = checkResponse.data.sha;
+      console.log(`备用仓库中MD文件 ${COPY_MD_FILE_STORAGE_NAME} 已存在，使用SHA: ${sha}`);
+    } catch (error) {
+      // 文件不存在，创建新文件
+      if (error.response && error.response.status !== 404) {
+        console.error(`检查备用仓库中MD文件存在性失败:`, error.message);
+        if (error.response) {
+          console.error('响应状态码:', error.response.status);
+          console.error('响应数据:', error.response.data);
+        }
+        throw error;
+      }
+      console.log(`备用仓库中MD文件 ${COPY_MD_FILE_STORAGE_NAME} 不存在，将创建新文件`);
+    }
+
+    // 转换为base64
+    const base64Content = Buffer.from(content, 'utf-8').toString('base64');
+
+    // 准备上传数据
+    const uploadData = {
+      message: `Copy file records: added ${uploadedFiles.length} files`,
+      content: base64Content,
+      branch: COPY_MD_GITHUB_BRANCH
+    };
+
+    // 如果文件已存在，添加sha
+    if (sha) {
+      uploadData.sha = sha;
+    }
+
+    // 调用GitHub API上传文件
+    console.log(`复制MD文件 ${COPY_MD_FILE_STORAGE_NAME} 到备用仓库路径: ${filePath}`);
+    const response = await axios.put(url, uploadData, { headers });
+    console.log(`MD文件 ${COPY_MD_FILE_STORAGE_NAME} 复制到备用仓库成功，SHA: ${response.data.sha}`);
+
+    return {
+      success: true,
+      message: 'MD文件复制到备用仓库成功',
+      data: response.data,
+      targetRepo: `${COPY_MD_GITHUB_USERNAME}/${COPY_MD_GITHUB_REPO}`,
+      targetPath: filePath
+    };
+
+  } catch (error) {
+    console.error('复制MD文件到备用仓库失败:', error.message);
+    if (error.response) {
+      console.error('响应状态码:', error.response.status);
+      console.error('响应数据:', error.response.data);
+      // 提供更详细的错误信息
+      if (error.response.status === 401) {
+        throw new Error('备用仓库GitHub Token无效或权限不足');
+      } else if (error.response.status === 404) {
+        throw new Error('备用仓库不存在或路径不正确');
+      } else if (error.response.status === 403) {
+        throw new Error('备用仓库权限被拒绝，请检查Token权限');
+      }
+    }
+    throw error;
+  }
+}
 
 // 保持原有云函数调用方式的兼容性
 exports.handler = async (req, res) => {
@@ -255,6 +275,9 @@ exports.handler = async (req, res) => {
     });
   }
 };
+
+// 导出复制MD文件到备用仓库的函数
+exports.copyMDToSecondaryRepo = copyMDToSecondaryRepo;
 
 // 确保exports对象上的所有属性都能被访问到
 // 先将exports对象赋值给module.exports，再设置handler为默认导出
@@ -394,20 +417,24 @@ function generateMDContent(existingContent, uploadedFiles) {
       }
     }
     
-    // 转换文件中的上传时间格式，并保留所有原始参数
-    const filesWithFormattedTime = uploadedFiles.map(file => ({
-      ...file, // 保留所有原始参数
-      uploadTime: file.uploadTime ? new Date(file.uploadTime).toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'Asia/Shanghai'
-      }).replace(/\//g, '-') : ''
-    }));
+    // 转换文件中的上传时间格式，排除content字段
+    const filesWithFormattedTime = uploadedFiles.map(file => {
+      // 解构文件对象，排除content字段
+      const { content, ...fileWithoutContent } = file;
+      return {
+        ...fileWithoutContent, // 保留除content外的所有参数
+        uploadTime: file.uploadTime ? new Date(file.uploadTime).toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: 'Asia/Shanghai'
+        }).replace(/\//g, '-') : ''
+      };
+    });
     
     // 添加新的日志记录
     logs.push({

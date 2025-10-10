@@ -186,6 +186,47 @@ module.exports = async (req, res) => {
 
         console.log('MD文件更新结果:', result);
         
+        // 比较GITHUB配置和MD_GITHUB配置，决定是否触发工作流
+        const MD_GITHUB_USERNAME = process.env.MD_GITHUB_USERNAME || 'muziyangg';
+        const MD_GITHUB_REPO = process.env.MD_GITHUB_REPO || 'Hugo-Upload';
+        const MD_GITHUB_BRANCH = process.env.MD_GITHUB_BRANCH || 'main';
+        
+        // 检查是否有任何配置不同
+        const shouldTriggerWorkflow = 
+          GITHUB_USERNAME !== MD_GITHUB_USERNAME ||
+          GITHUB_REPO !== MD_GITHUB_REPO ||
+          GITHUB_BRANCH !== MD_GITHUB_BRANCH;
+        
+        console.log('GitHub配置比较结果 - 是否触发工作流:', shouldTriggerWorkflow);
+        console.log('GITHUB配置:', { GITHUB_USERNAME, GITHUB_REPO, GITHUB_BRANCH });
+        console.log('MD_GITHUB配置:', { MD_GITHUB_USERNAME, MD_GITHUB_REPO, MD_GITHUB_BRANCH });
+        
+        // 如果配置不同，触发工作流
+        if (shouldTriggerWorkflow && GITHUB_TOKEN) {
+          try {
+            const workflowUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/actions/workflows/deploy.yaml/dispatches`;
+            const workflowHeaders = {
+              'Authorization': `token ${GITHUB_TOKEN}`,
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'Vercel Cloud Function'
+            };
+            
+            console.log(`触发GitHub Actions工作流: ${workflowUrl}`);
+            await axios.post(workflowUrl, {
+              ref: GITHUB_BRANCH
+            }, { headers: workflowHeaders });
+            
+            console.log('GitHub Actions工作流触发成功');
+          } catch (error) {
+            console.error('触发GitHub Actions工作流失败:', error.message);
+            if (error.response) {
+              console.error('响应状态码:', error.response.status);
+              console.error('响应数据:', error.response.data);
+            }
+            // 即使触发工作流失败，文件上传仍然视为成功
+          }
+        }
+        
       } catch (error) {
         console.error('更新MD文件失败:', error);
         // 即使更新MD文件失败，文件上传仍然视为成功

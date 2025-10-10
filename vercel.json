@@ -6,16 +6,8 @@
       "use": "@vercel/node"
     },
     {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app-config.json",
-      "use": "@vercel/static"
+      "src": "dist/*.*",
+      "use": "@vercel/static" 
     }
   ],
   "routes": [
@@ -24,12 +16,16 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/([^.]+\\.html)$",
+      "dest": "/dist/$1" 
+    },
+    {
       "src": "^(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2|woff|ttf|eot|json))$",
-      "dest": "$1"
+      "dest": "/dist$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/dist/index.html"
     }
   ]
 }
