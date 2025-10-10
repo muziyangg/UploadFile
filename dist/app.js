@@ -565,6 +565,17 @@ createApp({
       // 初始化拖放区域
       initDropArea();
       
+      // 添加关闭搜索侧边栏的功能
+      document.getElementById('closeSearchBtn').addEventListener('click', function() {
+          const searchDiv = document.getElementById('search');
+          searchDiv.classList.remove('visible');
+          
+          // 更新app区域的宽度，确保占据左侧和中间位置
+          const appDiv = document.getElementById('app');
+          appDiv.style.gridColumn = '1 / span 2';
+          appDiv.style.width = '100%';
+      });
+      
       // 监听输入变化
       document.getElementById('uploadPassword').addEventListener('input', () => {
         uploadPassword.value = document.getElementById('uploadPassword').value;

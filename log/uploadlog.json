@@ -535,5 +535,26 @@
       "timestamp": "2025-10-10T07:50:17.021Z",
       "fileCount": 2
     }
+  },
+  {
+    "timestamp": "2025-10-10 16:49:43",
+    "files": [
+      {
+        "name": "罗氏流水线IT3000.docx",
+        "originalName": "罗氏流水线IT3000.docx",
+        "path": "src/upload/assets/罗氏流水线IT3000.docx",
+        "size": 15838128,
+        "downloadUrl": "https://hugoupload.717170.xyz/src/upload/assets/罗氏流水线IT3000.docx",
+        "uploader": "杨浩然",
+        "ipAddress": "104.28.192.131",
+        "location": "金沙萨 金夏沙",
+        "uploadTime": "2025-10-10 16:49:42"
+      }
+    ],
+    "totalFiles": 1,
+    "requestInfo": {
+      "timestamp": "2025-10-10T08:49:43.391Z",
+      "fileCount": 1
+    }
   }
 ]

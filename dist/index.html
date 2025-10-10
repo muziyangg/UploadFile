@@ -182,19 +182,6 @@
 
             <!-- 中间主要内容 - 自适应宽度 -->
             <div id="app" class="w-full">
-            
-            <script>
-                // 添加关闭搜索侧边栏的功能
-                document.getElementById('closeSearchBtn').addEventListener('click', function() {
-                    const searchDiv = document.getElementById('search');
-                    searchDiv.classList.remove('visible');
-                    
-                    // 更新app区域的宽度，确保占据左侧和中间位置
-                    const appDiv = document.getElementById('app');
-                    appDiv.style.gridColumn = '1 / span 2';
-                    appDiv.style.width = '100%';
-                });
-            </script>
                 <!-- 认证设置 -->
                 <div class="bg-white p-4 rounded-lg shadow mb-6">
                     <h2 class="text-lg font-semibold mb-3">上传设置</h2>
