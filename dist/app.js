@@ -90,10 +90,17 @@ createApp({
 
       const invalidFiles = [];
       const validFiles = [];
+      const sizeLimit = 24 * 1024 * 1024; // 24MB的大小限制
       
       Array.from(filesList).forEach(file => {
         // 获取文件扩展名（小写）
         const extension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        // 检查文件大小是否超过限制
+        if (file.size > sizeLimit) {
+          invalidFiles.push(`${file.name} (文件大小超过24MB限制)`);
+          return;
+        }
         
         // 检查文件类型是否允许
         const isAllowedType = allowedFileTypes.value.some(type => 
