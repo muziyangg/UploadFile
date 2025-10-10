@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        .drop-area {
+            border: 2px dashed #ccc;
+            transition: all 0.3s ease;
+        }
+        .drop-area.active {
+            border-color: #4CAF50;
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        .file-item {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .error-message {
+            animation: shake 0.5s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        /* 三分布局样式 */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .layout-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            width: 100%;
+            min-height: calc(100vh - 160px);
+            height: calc(100vh - 160px);
+        }
+        
+        /* 左侧边栏样式 - 独立控制 */
+        #search {
+            display: none; /* 初始状态隐藏 */
+        }
+        
+        #search.visible {
+            display: flex; /* 显示状态 */
+        }
+        
+        /* 左侧边栏隐藏时，app区域占据左侧和中间位置 */
+        #search:not(.visible) ~ #app {
+            grid-column: 1 / span 2;
+            width: 100%;
+        }
+        
+        /* 左侧边栏显示时，app区域保持中间位置 */
+        #search.visible ~ #app {
+            grid-column: 2;
+            width: 100%;
+        }
+        
+        /* 确保左侧边栏内的内容自适应高度 */
+        .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* 右侧边栏样式 - 独立设置，不参与左侧边栏的显示/隐藏逻辑 */
+        #statistics {
+            grid-column: 3;
+            display: flex;
+            flex-direction: column;
+        }
+        .left-sidebar, .right-sidebar {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #statistics .p-4 {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 16px !important;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        /* 标题头固定样式 */
+        #statistics h3 {
+            margin: 0;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        /* 文件记录列表容器 */
+        #statistics .h-full {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        /* 文件记录列表占满剩余空间并随页面拉长 */
+        #fileRecordsList.file-list {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            width: 100%;
+            /* 处理滚动条宽度，确保内容不会被截断 */
+            padding-right: 8px;
+            box-sizing: border-box;
+        }
+        /* 确保滚动条出现时不影响整体布局 */
+        .right-sidebar {
+            overflow: hidden;
+        }
+        /* 响应式设计，优先压缩中间内容 */
+        @media (max-width: 768px) {
+            .layout-container {
+                grid-template-columns: 1fr;
+            }
+            .left-sidebar, .right-sidebar {
+                display: none;
+            }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .layout-container {
+                grid-template-columns: 200px 1fr 200px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 页面标题部分 -->
+    <header class="py-3 px-4 bg-gradient-to-b from-white to-gray-50 shadow-sm mb-6 w-full">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-center">
+                <div class="bg-blue-600 text-white p-2 rounded-full shadow-md mr-3">
+                    <i class="fa fa-upload text-xl"></i>
+                </div>
+                <h1 class="text-[clamp(1.5rem,4vw,2.25rem)] font-bold text-gray-800 transition-all duration-300 hover:text-blue-600">
+                    文件上传器
+                </h1>
+            </div>
+            <p class="text-center text-gray-600 text-base max-w-2xl mx-auto mt-1">
+                共享文档上传下载统计
+            </p>
+        </div>
+    </header>
+
+    <!-- 主体内容 - 三分布局 -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <div class="layout-container">
+            <!-- 左侧边栏 -->
+            <div id="search" class="left-sidebar">
+                <!-- 侧边栏头部：标题和关闭按钮 -->
+                <div style="background-color: #f8fafc; padding: 10px 15px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 500; color: #1e293b;">搜索文件</h3>
+                    <button id="closeSearchBtn" style="background-color: transparent; border: none; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; background-color: #e2e8f0; transition: background-color 0.2s;">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <!-- 通过iframe加载search.html页面 -->
+                <div style="flex: 1; position: relative;">
+                    <iframe src="search.html" width="100%" height="100%" frameborder="0" style="border: none; position: absolute; top: 0; left: 0;"></iframe>
+                </div>
+            </div>
+
+            <!-- 中间主要内容 - 自适应宽度 -->
+            <div id="app" class="w-full">
+            
+            <script>
+                // 添加关闭搜索侧边栏的功能
+                document.getElementById('closeSearchBtn').addEventListener('click', function() {
+                    const searchDiv = document.getElementById('search');
+                    searchDiv.classList.remove('visible');
+                    
+                    // 更新app区域的宽度，确保占据左侧和中间位置
+                    const appDiv = document.getElementById('app');
+                    appDiv.style.gridColumn = '1 / span 2';
+                    appDiv.style.width = '100%';
+                });
+            </script>
+                <!-- 认证设置 -->
+                <div class="bg-white p-4 rounded-lg shadow mb-6">
+                    <h2 class="text-lg font-semibold mb-3">上传设置</h2>
+                    <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">上传密码</label>
+                    <div class="relative">
+                        <input type="password" id="uploadPassword" 
+                               class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="输入上传密码" />
+                        <button type="button" id="togglePasswordBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">上传人</label>
+                    <input type="text" id="uploader" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="输入您的姓名" />
+                </div>
+                </div>
+
+                <!-- 拖放区域 -->
+                <div id="dropArea" class="dropArea bg-white p-8 rounded-lg shadow text-center mb-6">
+                    <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-4">拖放文件到这里，或者</p>
+                    <button id="selectFileBtn" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition cursor-pointer">
+                        <i class="fa fa-file-o mr-2"></i>选择文件
+                    </button>
+                    <input type="file" id="fileInput" multiple class="hidden" />
+                    <p id="emptyMessage" class="mt-4 text-gray-500">暂无文件</p>
+                </div>
+
+                <!-- 文件列表 -->
+                <div id="fileList" class="bg-white rounded-lg shadow overflow-hidden mb-6 hidden">
+                    <div id="fileListHeader" class="px-4 py-3 bg-gray-50 border-b border-gray-200 font-medium">
+                        待上传文件 (<span id="fileCount">0</span>)
+                    </div>
+                    <div id="filesContainer" class="divide-y divide-gray-200"></div>
+                </div>
+
+                <!-- 上传按钮 -->
+                <div class="text-center">
+                    <button id="uploadBtn" class="bg-green-500 text-white px-8 py-3 rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fa fa-upload mr-2"></i>上传所有文件
+                    </button>
+                </div>
+
+                <div id="statusMessage" class="mt-6 p-4 rounded-lg hidden"></div>
+            </div>
+
+            <!-- 右侧边栏 -->
+            <div id="statistics" class="right-sidebar">
+                <!-- 右侧内容，便于后续拓展 -->
+                <div class="p-4">
+                    <h3 class="text-xl font-bold mb-4 p-2 bg-gray-200 rounded-md">文件记录</h3>
+                    <div class="h-full">
+                        <div id="fileRecordsList" class="file-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dealMD.js"></script>
+    <script type="module" src="app.js"></script>
+    <script src="record.js"></script>
+    
+    <!-- 确保clientInfo全局对象存在 -->
+    <script>
+        // 初始化clientInfo全局对象，如果不存在
+        window.clientInfo = window.clientInfo || {
+            ip: '未知IP',
+            location: '未知地址'
+        };
+    </script>
+</body>
+</html>
